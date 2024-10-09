@@ -1,0 +1,198 @@
+﻿<Window x:Class="NovelReader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NovelReader" 
+        xmlns:fa="http://schemas.fontawesome.io/icons/"
+        mc:Ignorable="d"
+        Title="{Binding Novel.BookName}" Height="Auto" Width="Auto"
+        Background="{Binding AppConfig.BackgroundColor}"
+        xmlns:tb="http://www.hardcodet.net/taskbar"
+        StateChanged="Window_StateChanged"
+        KeyUp="lstContent_KeyDown"
+        LocationChanged="Window_LocationChanged"
+        SizeChanged="Window_SizeChanged"
+        
+        >
+
+
+    <Grid>
+        <!-- Row Definitions -->
+        <Grid.RowDefinitions>
+            <!-- Red: Fixed height -->
+            <RowDefinition Height="20"/>
+            <!-- Yellow: Take the rest of the space -->
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+
+
+        <tb:TaskbarIcon
+            ToolTipText="Novel Reader"
+            x:Name="taskBarIcon"
+            TrayLeftMouseDown="TaskBarIcon_TrayLeftMouseDown"
+        >
+            <tb:TaskbarIcon.ContextMenu>
+                <ContextMenu>
+                    <!-- Tùy chọn Open -->
+                    <MenuItem Header="Open" Click="Menu_Open_Click"/>
+                    <!-- Tùy chọn Exit -->
+                    <MenuItem Header="Exit" Click="Menu_Exit_Click"/>
+                </ContextMenu>
+            </tb:TaskbarIcon.ContextMenu>
+        </tb:TaskbarIcon>
+
+        <!-- Red StackPanel at the top -->
+        <StackPanel Orientation="Horizontal"  Grid.Row="0">
+            <!-- ComboBox (Dropdown Menu) -->
+            <Menu Margin="2,0,2,0" Background="Transparent">
+                <!--<MenuItem Header="Options" Foreground="{Binding AppConfig.TextColor}">
+                    <MenuItem Header="Change Config" Click="OpenConfig_Click"/>
+                </MenuItem>-->
+                <MenuItem Click="ToggleTOC_Click">
+                    <MenuItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <!-- Biểu tượng của MenuItem -->
+                            <fa:FontAwesome  Foreground="{Binding AppConfig.TextColor}" Icon="ListUl" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,5,0"/>
+                            <!-- Văn bản của MenuItem -->
+                            <TextBlock Text="Toggle TOC" VerticalAlignment="Center" Foreground="{Binding AppConfig.TextColor}"/>
+                        </StackPanel>
+                    </MenuItem.Header>
+                </MenuItem>
+            </Menu>
+        </StackPanel>
+
+        <!-- Yellow StackPanel in the middle with 2 columns -->
+        <Grid Grid.Row="1" x:Name="contentGrid">
+            <Grid.ColumnDefinitions>
+                <!-- Column 1: 30% width -->
+                <ColumnDefinition Width="2*" x:Name="leftColumn"/>
+                <!-- Column 2: 70% width -->
+                <ColumnDefinition Width="8*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Content for the first column (left) -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="1">
+                    <ListView
+                    x:Name="ChapterListView"
+                    ItemsSource="{Binding Novel.Chapters}" 
+                      SelectedItem="{Binding SelectedChapter, Mode=TwoWay}" 
+                      SelectionChanged="ChaptersListView_SelectionChanged" 
+                      KeyDown="ChapterListView_KeyDown"
+                      Margin="0,0,0,0" 
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                    Background="Transparent"
+                    Foreground="{Binding AppConfig.TextColor}"
+                    ItemContainerStyle="{Binding listBoxItemStyle}"
+                    >
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Title}" FontSize="14" Padding="0,5,0,0" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </DockPanel>
+            </Grid>
+
+            <!-- Content for the second column (right) -->
+            <DockPanel Grid.Column="1">
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="127*"/>
+                        <ColumnDefinition Width="153*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="50"></RowDefinition>
+                        <RowDefinition Height="23*"></RowDefinition>
+                        <RowDefinition Height="58*"/>
+                        <RowDefinition Height="253*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="{Binding SelectedChapter.Title}" FontSize="20" FontWeight="Bold" Foreground="Red" Grid.ColumnSpan="2"/>
+
+                    <ListBox ItemsSource="{Binding SelectedChapter.Content}" 
+                        Grid.Row="1" Background="Transparent"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.CanContentScroll="False"
+                             BorderThickness="0"
+                             x:Name="lstContent"
+                             SelectionChanged="LstContent_SelectionChanged"
+                             SelectionMode="Single"
+                             PreviewMouseDown ="lstContent_PreviewMouseDown"
+                             KeyDown="lstContent_KeyDown"
+                             FontSize="{Binding AppConfig.FontSize}" Grid.RowSpan="3" Grid.ColumnSpan="2"
+                             Foreground="{Binding AppConfig.TextColor}"
+                             ItemContainerStyle="{Binding listBoxItemStyle}"
+                             
+                    >
+                        <ListBox.ItemTemplate >
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" 
+                                   TextWrapping="Wrap" 
+                                   Margin="0,0,0,10" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                </Grid>
+
+
+            </DockPanel>
+        </Grid>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="2">
+            <Button Width="50" 
+                    Background="{Binding AppConfig.TextColor}"
+                    Foreground="{Binding AppConfig.BackgroundColor}"
+                    BorderThickness="0.3"
+                    Click="ButtonPreChap_Click" >
+                <fa:FontAwesome Icon="FastBackward" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Button>
+
+            <Button Width="50" Click="ButtonPreLine_Click" 
+                Background="{Binding AppConfig.TextColor}"
+                Foreground="{Binding AppConfig.BackgroundColor}"
+                BorderThickness="0.3"    
+                Margin="10,0,0,0">
+                <fa:FontAwesome Icon="Backward" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Button>
+
+            <Button Width="50" Click="ButtonPlay_Click" Margin="10,0,0,0" 
+                    Background="{Binding AppConfig.TextColor}"
+                    Foreground="{Binding AppConfig.BackgroundColor}"
+                    BorderThickness="0.3">      
+                <fa:FontAwesome x:Name="icoPlay" Icon="Play" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Button>
+
+            <Button Width="50" Click="ButtonNextLine_Click" Margin="10,0,0,0"
+                    Background="{Binding AppConfig.TextColor}"
+                    Foreground="{Binding AppConfig.BackgroundColor}"
+                    BorderThickness="0.3">      
+                <fa:FontAwesome Icon="Forward" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Button>
+
+            <Button Width="50" Click="ButtonNextChap_Click" Margin="10,0,0,0"
+                Background="{Binding AppConfig.TextColor}"
+                Foreground="{Binding AppConfig.BackgroundColor}"
+                BorderThickness="0.3">
+                <fa:FontAwesome Icon="FastForward" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Button>
+
+            <Button Width="50" Click="OpenConfig_Click" Margin="10,0,0,0"
+                Background="{Binding AppConfig.TextColor}"
+                Foreground="{Binding AppConfig.BackgroundColor}"
+                BorderThickness="0.3">
+                <fa:FontAwesome Icon="Gear" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Button>
+
+        </StackPanel>
+    </Grid>
+
+
+</Window>
