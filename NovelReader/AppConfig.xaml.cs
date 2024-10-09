@@ -61,7 +61,10 @@ namespace NovelReader
         }
         private void ChoosePathBook_Click(object sender, RoutedEventArgs e)
         {
-            lbPathBook.Content = WpfUtils.GetFilePath(lbPathBook?.Content?.ToString() ?? "");
+            MainWindow.AppConfig.FolderTemp = WpfUtils.GetFolderPath(MainWindow.AppConfig.FolderTemp ?? "");
+            OnPropertyChanged("");
+
+
         }
 
         private void ButtonSave_Click(object sender, RoutedEventArgs e)

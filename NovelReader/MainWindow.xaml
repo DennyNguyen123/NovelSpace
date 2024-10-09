@@ -83,7 +83,7 @@
                     ItemsSource="{Binding Novel.Chapters}" 
                       SelectedItem="{Binding SelectedChapter, Mode=TwoWay}" 
                       SelectionChanged="ChaptersListView_SelectionChanged" 
-                      KeyDown="ChapterListView_KeyDown"
+                      MouseLeftButtonDown="ChapterListView_MouseLeftButtonDown"
                       Margin="0,0,0,0" 
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                     Background="Transparent"

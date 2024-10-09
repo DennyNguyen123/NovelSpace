@@ -37,16 +37,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DataSharedLibrary\DataSharedLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="TTSvi-VN.rar">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Models.cs">
-      <Generator></Generator>
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Compile>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

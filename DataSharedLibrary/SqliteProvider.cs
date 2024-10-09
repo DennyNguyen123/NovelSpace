@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 
-namespace NovelReader
+namespace DataSharedLibrary
 {
     public class SqliteProvider
     {

@@ -9,7 +9,9 @@ using System.Windows.Forms; // Thêm thư viện Windows Forms
 using System.Drawing;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using Brushes = System.Windows.Media.Brushes;
-using Hardcodet.Wpf.TaskbarNotification; // Thêm thư viện Drawing để dùng Icon
+using Hardcodet.Wpf.TaskbarNotification;
+using DataSharedLibrary;
+using System.Data.Entity; // Thêm thư viện Drawing để dùng Icon
 
 namespace NovelReader
 {
@@ -44,9 +46,11 @@ namespace NovelReader
         private bool _isMouseClicked;
         private bool _isListChapterClicked;
 
+        public AppDbContext _AppDbContext = null;
+
         public Style listBoxItemStyle
         {
-            get;set;
+            get; set;
         }
 
         #endregion Property
@@ -79,6 +83,8 @@ namespace NovelReader
         protected override void OnClosed(EventArgs e)
         {
             _keyboardHook?.Dispose();
+            _AppDbContext?.Dispose();
+
             base.OnClosed(e);
         }
 
@@ -226,13 +232,15 @@ namespace NovelReader
                 {
                     AppConfig.CurrentLine = 0;
                     AppConfig.CurrentChapter += 1;
-                    SelectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
                 else//Move to first
                 {
                     AppConfig.CurrentLine = 0;
-                    SelectedChapter = Novel?.Chapters?[0];
                     AppConfig.CurrentChapter = 0;
+                    var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
             }
 
@@ -249,7 +257,8 @@ namespace NovelReader
             var newIndex = currentIndex + 1;
             if (newIndex.HasValue & newIndex <= Novel?.Chapters?.Count())
             {
-                SelectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
+                var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
+                SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 AppConfig.CurrentChapter = newIndex.Value;
                 AppConfig.CurrentLine = 0;
                 AppConfig.CurrentPosition = 0;
@@ -269,8 +278,9 @@ namespace NovelReader
                 if (AppConfig.CurrentChapter > 0)
                 {
                     AppConfig.CurrentChapter -= 1;
-                    SelectedChapter = Novel?.Chapters?[AppConfig.CurrentChapter] ?? new ChapterContent();
                     var curLine = (SelectedChapter?.Content?.Count ?? 1) - 1;
+                    var selectedChapter = Novel?.Chapters?[AppConfig.CurrentChapter] ?? new ChapterContent();
+                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
                     AppConfig.CurrentLine = curLine;
                 }
@@ -291,7 +301,9 @@ namespace NovelReader
             var newIndex = currentIndex - 1;
             if (newIndex.HasValue & newIndex >= 0)
             {
-                SelectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
+                var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
+                SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+
                 AppConfig.CurrentChapter = newIndex.Value;
                 AppConfig.CurrentLine = 0;
                 AppConfig.CurrentPosition = 0;
@@ -299,12 +311,12 @@ namespace NovelReader
             }
         }
 
-        private void LoadNovelData()
+        private void LoadNovelData_bak()
         {
-            if (!string.IsNullOrEmpty(AppConfig.BookJsonPath))
+            if (!string.IsNullOrEmpty(AppConfig.FolderTemp))
             {
                 Novel = new NovelContent();
-                Novel = WpfUtils.GetModelFromJsonFile<NovelContent>(AppConfig.BookJsonPath) ?? new NovelContent();
+                Novel = WpfUtils.GetModelFromJsonFile<NovelContent>(AppConfig.FolderTemp) ?? new NovelContent();
 
                 if (Novel != null)
                 {
@@ -320,6 +332,31 @@ namespace NovelReader
                 }
             }
 
+        }
+
+        private void LoadNovelData()
+        {
+            var dbPath = AppConfig._sqlitepath;
+            var bookId = AppConfig.CurrentBookId;
+            var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
+            _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+
+            Novel = _AppDbContext.GetNovel(bookId);
+
+            if (Novel != null)
+            {
+                if (Novel.Chapters != null)
+                {
+                    foreach (var item in Novel.Chapters)
+                    {
+                        item?.Content?.RemoveAll(x => string.IsNullOrEmpty(x));
+                    }
+
+                    var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    selectedChapter.Content = _AppDbContext.ChapterDetailContents.Where(x => x.BookId == bookId & x.ChapterId == selectedChapter.ChapterId).Select(r => r.Content).ToList();
+                    SelectedChapter = selectedChapter;
+                }
+            }
         }
 
         private void ModifySelectedChapter()
@@ -503,21 +540,24 @@ namespace NovelReader
             }
         }
 
-        private void ChapterListView_KeyDown(object sender, KeyEventArgs e)
+        private void ChapterListView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _isListChapterClicked = true;
         }
         private void ChaptersListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             // Cập nhật SelectedChapter với chương được chọn
-            if (_isListChapterClicked && sender is System.Windows.Controls.ListView listView && listView.SelectedItem is ChapterContent chapter)
+            if (sender is System.Windows.Controls.ListView listView && listView.SelectedItem is ChapterContent chapter)
             {
-                SelectedChapter = chapter;
-                AppConfig.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
-                AppConfig.CurrentLine = 0;
-                AppConfig.CurrentPosition = 0;
-                ModifySelectedChapter();
-                _isListChapterClicked = false;
+                if (true)
+                {
+                    SelectedChapter = _AppDbContext.GetContentChapter(chapter);
+                    AppConfig.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
+                    AppConfig.CurrentLine = 0;
+                    AppConfig.CurrentPosition = 0;
+                    ModifySelectedChapter();
+                    _isListChapterClicked = false;
+                }
             }
         }
 
@@ -679,6 +719,7 @@ namespace NovelReader
 
 
         #endregion Button_Action
+
 
     }
 }

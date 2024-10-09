@@ -1,1 +1,20 @@
-{"CurrentChapter":367,"CurrentLine":61,"CurrentPosition":0,"BookJsonPath":"D:\\Truyen\\HTML\\docfull.org\\thanh-khu-dich-full-new.json","FontSize":20,"VoiceName":"Microsoft An","VoiceRate":2,"VoiceVolumn":100,"isShowInTaskBar":false,"BackgroundColor":"#323131","TextColor":"#FFFF0080","CurrentTextColor":"#3A42D2","SelectedParagraphColor":"#FF8080FF","LastWidth":351,"LastHeigh":624,"LastTop":0,"LastLeft":0}
+{
+  "CurrentChapter": 367,
+  "CurrentLine": 61,
+  "CurrentPosition": 0,
+  "FolderTemp": "D:\\Truyen\\SQLite",
+  "CurrentBookId": "30edb4e1-d28f-4253-b4a0-5c1aa94901a7",
+  "FontSize": 20,
+  "VoiceName": "Microsoft An",
+  "VoiceRate": 2,
+  "VoiceVolumn": 100,
+  "isShowInTaskBar": false,
+  "BackgroundColor": "#323131",
+  "TextColor": "#FFFF0080",
+  "CurrentTextColor": "#3A42D2",
+  "SelectedParagraphColor": "#FF8080FF",
+  "LastWidth": 351,
+  "LastHeigh": 624,
+  "LastTop": 0,
+  "LastLeft": 0
+}

@@ -5,6 +5,10 @@ VisualStudioVersion = 17.11.35219.272
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NovelReader", "NovelReader\NovelReader.csproj", "{7D6311F3-6E39-4B1A-9DB1-81C9369EF365}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataSharedLibrary", "DataSharedLibrary\DataSharedLibrary.csproj", "{913A03EC-45AB-4EF0-9D14-9DD4F4179F3E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NovelGetConsole", "NovelGetConsole\NovelGetConsole.csproj", "{2BC42785-0CB5-4DE2-A87B-CD2F8C9C0BF5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{7D6311F3-6E39-4B1A-9DB1-81C9369EF365}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D6311F3-6E39-4B1A-9DB1-81C9369EF365}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D6311F3-6E39-4B1A-9DB1-81C9369EF365}.Release|Any CPU.Build.0 = Release|Any CPU
+		{913A03EC-45AB-4EF0-9D14-9DD4F4179F3E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{913A03EC-45AB-4EF0-9D14-9DD4F4179F3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{913A03EC-45AB-4EF0-9D14-9DD4F4179F3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{913A03EC-45AB-4EF0-9D14-9DD4F4179F3E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BC42785-0CB5-4DE2-A87B-CD2F8C9C0BF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BC42785-0CB5-4DE2-A87B-CD2F8C9C0BF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BC42785-0CB5-4DE2-A87B-CD2F8C9C0BF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BC42785-0CB5-4DE2-A87B-CD2F8C9C0BF5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

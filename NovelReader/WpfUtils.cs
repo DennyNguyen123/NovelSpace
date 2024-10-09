@@ -76,6 +76,21 @@ namespace NovelReader
             return currentPath;
         }
 
+        public static string? GetFolderPath(string? currentPath = null, string filter = "All Files (*.*)|*.*")
+        {
+            Microsoft.Win32.OpenFolderDialog openFileDialog = new Microsoft.Win32.OpenFolderDialog
+            {
+                Title = "Select a Folder",
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string selectedFilePath = openFileDialog.FolderName;
+                return selectedFilePath;
+            }
+            return currentPath;
+        }
+
         public static void ClearAndWriteToFile(string filePath, string newContent)
         {
             // Ghi đè nội dung mới lên file
