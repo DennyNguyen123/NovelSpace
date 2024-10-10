@@ -200,8 +200,6 @@ namespace NovelReader
             {
                 this.Title = $"{Novel.BookName} - {Novel.Author}";
 
-                lstContent.SelectedIndex = AppConfig.CurrentLine;
-
                 ModifySelectedChapter();
             }
 
@@ -259,6 +257,7 @@ namespace NovelReader
             {
                 var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
                 SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                
                 AppConfig.CurrentChapter = newIndex.Value;
                 AppConfig.CurrentLine = 0;
                 AppConfig.CurrentPosition = 0;
@@ -278,10 +277,10 @@ namespace NovelReader
                 if (AppConfig.CurrentChapter > 0)
                 {
                     AppConfig.CurrentChapter -= 1;
-                    var curLine = (SelectedChapter?.Content?.Count ?? 1) - 1;
                     var selectedChapter = Novel?.Chapters?[AppConfig.CurrentChapter] ?? new ChapterContent();
                     SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
+                    var curLine = (SelectedChapter?.Content?.Count ?? 1) - 1;
                     AppConfig.CurrentLine = curLine;
                 }
             }
@@ -347,14 +346,8 @@ namespace NovelReader
             {
                 if (Novel.Chapters != null)
                 {
-                    foreach (var item in Novel.Chapters)
-                    {
-                        item?.Content?.RemoveAll(x => string.IsNullOrEmpty(x));
-                    }
-
                     var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
-                    selectedChapter.Content = _AppDbContext.ChapterDetailContents.Where(x => x.BookId == bookId & x.ChapterId == selectedChapter.ChapterId).Select(r => r.Content).ToList();
-                    SelectedChapter = selectedChapter;
+                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
             }
         }
@@ -362,9 +355,8 @@ namespace NovelReader
         private void ModifySelectedChapter()
         {
             lstContent.SelectedIndex = AppConfig.CurrentLine;
-            ChapterListView.ScrollIntoView(SelectedChapter);
-            var selectedItem = SelectedChapter.Content[AppConfig.CurrentLine];
-            lstContent.ScrollIntoView(selectedItem);
+            ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
+            lstContent.ScrollIntoView(lstContent.SelectedItem);
             ContinueSpeech();
             AppConfig.Save();
             UpdateHightlightFirst();
@@ -489,11 +481,6 @@ namespace NovelReader
             AppConfig.Save();
         }
 
-        private void lstContent_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            _isMouseClicked = true;
-        }
-
         private void lstContent_KeyDown(object sender, KeyEventArgs e)
         {
             if (SelectedChapter != null)
@@ -531,32 +518,29 @@ namespace NovelReader
 
         private void LstContent_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (_isMouseClicked)
+            if (sender is System.Windows.Controls.ListBox listView)
             {
-                AppConfig.CurrentLine = lstContent.SelectedIndex;
-                AppConfig.CurrentPosition = 0;
-                ModifySelectedChapter();
-                _isMouseClicked = false;
+                if (listView.IsMouseCaptured)
+                {
+                    AppConfig.CurrentLine = lstContent.SelectedIndex;
+                    AppConfig.CurrentPosition = 0;
+                    ModifySelectedChapter();
+                }
             }
         }
 
-        private void ChapterListView_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            _isListChapterClicked = true;
-        }
         private void ChaptersListView_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             // Cập nhật SelectedChapter với chương được chọn
             if (sender is System.Windows.Controls.ListView listView && listView.SelectedItem is ChapterContent chapter)
             {
-                if (true)
+                if (listView.IsMouseCaptured)
                 {
                     SelectedChapter = _AppDbContext.GetContentChapter(chapter);
                     AppConfig.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
                     AppConfig.CurrentLine = 0;
                     AppConfig.CurrentPosition = 0;
                     ModifySelectedChapter();
-                    _isListChapterClicked = false;
                 }
             }
         }
@@ -715,6 +699,7 @@ namespace NovelReader
         {
             MoveNextChap();
         }
+
 
 
 

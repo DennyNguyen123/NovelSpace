@@ -40,7 +40,7 @@ namespace DataSharedLibrary
 
         public ChapterContent GetContentChapter(ChapterContent chapter)
         {
-            var content = this.ChapterDetailContents.Where(x => x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).Select(r => r.Content).ToList();
+            var content = this.ChapterDetailContents.Where(x => !string.IsNullOrEmpty(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).Select(r => r.Content).ToList();
             chapter.Content = content;
             return chapter;
         }
