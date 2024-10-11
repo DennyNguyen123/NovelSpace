@@ -13,7 +13,8 @@ using Hardcodet.Wpf.TaskbarNotification;
 using DataSharedLibrary;
 using System.Data.Entity;
 using System.IO;
-using System.Text.Json; // Thêm thư viện Drawing để dùng Icon
+using System.Text.Json;
+using MessageBox = System.Windows.MessageBox; // Thêm thư viện Drawing để dùng Icon
 
 namespace NovelReader
 {
@@ -58,6 +59,7 @@ namespace NovelReader
 
         public MainWindow()
         {
+
             AppConfig = new AppConfig();
             AppConfig.Get();
             LoadNovelData();
@@ -65,12 +67,12 @@ namespace NovelReader
             InitTTS();
             InitKeyHook();
 
+
             InitializeComponent();
 
             UpdateUIFirst();
-
             InitTaskBarIcon();
-
+            
             DataContext = this;
 
         }
@@ -167,8 +169,9 @@ namespace NovelReader
 
         public void UpdateUIFirst()
         {
+
             //Hide leftsidebar
-            leftColumn.Width = new GridLength(0);
+            //leftColumn.Width = new GridLength(0);
 
             this.Width = AppConfig.LastWidth;
             this.Height = AppConfig.LastHeigh;
@@ -311,35 +314,17 @@ namespace NovelReader
             }
         }
 
-        private void LoadNovelData_bak()
-        {
-            if (!string.IsNullOrEmpty(AppConfig.FolderTemp))
-            {
-                Novel = new NovelContent();
-                Novel = WpfUtils.GetModelFromJsonFile<NovelContent>(AppConfig.FolderTemp) ?? new NovelContent();
-
-                if (Novel != null)
-                {
-                    if (Novel.Chapters != null)
-                    {
-                        foreach (var item in Novel.Chapters)
-                        {
-                            item?.Content?.RemoveAll(x => string.IsNullOrEmpty(x));
-                        }
-
-                        SelectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                    }
-                }
-            }
-
-        }
-
         public void LoadNovelData()
         {
             var dbPath = AppConfig._sqlitepath;
             var bookId = AppConfig.CurrentBookId;
-            var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
-            _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+
+
+            if (_AppDbContext == null)
+            {
+                var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
+                _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+            }
 
             _current_reader = _AppDbContext.GetCurrentReader(bookId);
 
@@ -354,16 +339,22 @@ namespace NovelReader
                     SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
             }
+
         }
 
         private void ModifySelectedChapter()
         {
+            //if (!lstContent.IsFocused)
+            //{
+            //    lstContent.Focus();
+            //}
+
             //lstContent.SelectedIndex = _current_reader.CurrentLine;
             lstContent.SelectedIndex = _current_reader.CurrentLine;
             ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
             lstContent.ScrollIntoView(lstContent.SelectedItem);
             ContinueSpeech();
-            UpdateHightlightFirst();
+            //UpdateHightlightFirst();
             _AppDbContext.CurrentReader.Update(_current_reader);
             _AppDbContext.SaveChanges();
         }
@@ -470,7 +461,6 @@ namespace NovelReader
             {
                 this.Hide();
             }
-
         }
 
         private void Window_LocationChanged(object sender, EventArgs e)
@@ -489,7 +479,7 @@ namespace NovelReader
 
         private void lstContent_KeyDown(object sender, KeyEventArgs e)
         {
-            if (SelectedChapter != null)
+            if (!e.Handled & SelectedChapter != null)
             {
                 switch (e.Key)
                 {
@@ -506,17 +496,19 @@ namespace NovelReader
                         MovePrevChap();
                         break;
                     case Key.Space:
-                        ButtonPlay_Click(null, null);
+                        ButtonPlay_Click(null, new RoutedEventArgs());
                         break;
                     case Key.Escape:
-                        OpenConfig_Click(null, null);
+                        OpenConfig_Click(null, new RoutedEventArgs());
                         break;
                     case Key.F1:
-                        ToggleTOC_Click(null, null);
+                        ToggleTOC_Click(null, new RoutedEventArgs());
                         break;
                     default:
                         break;
                 }
+
+                e.Handled = true;
             }
 
         }
@@ -704,14 +696,14 @@ namespace NovelReader
         private void ToggleTOC_Click(object sender, RoutedEventArgs e)
         {
             // Toggle visibility of the left column
-            if (leftColumn.Width != new GridLength(0, GridUnitType.Star))
+            if (leftColumn.Width != new GridLength(0))
             {
-                leftColumn.Width = new GridLength(0, GridUnitType.Star); // Hide the column by setting its width to 0
+                leftColumn.Width = new GridLength(0); // Hide the column by setting its width to 0
                 lstContent.Focus();
             }
             else
             {
-                leftColumn.Width = new GridLength(3, GridUnitType.Star); // Show the column by restoring its width to 30%
+                leftColumn.Width = new GridLength(5, GridUnitType.Star); // Show the column by restoring its width to 30%
             }
         }
 

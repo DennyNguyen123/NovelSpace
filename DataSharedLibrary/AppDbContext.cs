@@ -70,7 +70,7 @@ namespace DataSharedLibrary
 
         public ChapterContent GetContentChapter(ChapterContent chapter)
         {
-            var content = this.ChapterDetailContents.Where(x => !string.IsNullOrEmpty(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).Select(r => r.Content).ToList();
+            var content = this.ChapterDetailContents.Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x=>x.Index).Select(r => r.Content).ToList();
             chapter.Content = content;
             return chapter;
         }
@@ -135,6 +135,67 @@ namespace DataSharedLibrary
             {
                 transaction?.Rollback();
                 await this.SaveChangesAsync();
+            }
+        }
+
+
+        public async Task ImportBookByJsonModel(NovelContent novelContent)
+        {
+            try
+            {
+                if (novelContent != null)
+                {
+                    if (this.NovelContents.Any(x=>x.URL == novelContent.URL))
+                    {
+                        Console.WriteLine("Already exist - skipped.");
+                        return;
+                    }
+
+                    var newNovel = new NovelContent();
+                    newNovel.Title = novelContent.Title;
+                    newNovel.URL = novelContent.URL;
+                    newNovel.Author = novelContent.Author;
+                    newNovel.BookId = novelContent.BookId ?? Guid.NewGuid().ToString();
+                    newNovel.MaxChapterCount = novelContent.MaxChapterCount;
+                    newNovel.BookName = novelContent.BookName;
+                    newNovel.ImageBase64 = novelContent.ImageBase64;
+
+
+                    var lstChapter = new List<ChapterContent>();
+                    var lstChapterDetail = new List<ChapterDetailContent>();
+                    novelContent?.Chapters?.ForEach(chapter =>
+                    {
+                        var newChap = new ChapterContent();
+                        newChap.Title = chapter.Title;
+                        newChap.IndexChapter = novelContent.Chapters.IndexOf(chapter);
+                        newChap.URL = chapter.URL;
+                        newChap.BookId = newNovel.BookId;
+                        newChap.ChapterId = chapter.ChapterId ?? Guid.NewGuid().ToString();
+                        lstChapter.Add(newChap);
+
+                        chapter?.Content?.ForEach(con =>
+                        {
+                            var content = new ChapterDetailContent();
+                            content.Id = Guid.NewGuid().ToString();
+                            content.ChapterId = newChap.ChapterId;
+                            content.BookId = newNovel.BookId;
+                            content.Content = con;
+                            content.Index = chapter.Content.IndexOf(con);
+                            lstChapterDetail.Add(content);
+                        });
+
+                    });
+
+                    await this.NovelContents.AddRangeAsync(newNovel);
+                    await this.ChapterContents.AddRangeAsync(lstChapter);
+                    await this.ChapterDetailContents.AddRangeAsync(lstChapterDetail);
+
+                    await this.SaveChangesAsync();
+
+                }
+            }
+            catch (Exception)
+            {
             }
         }
 

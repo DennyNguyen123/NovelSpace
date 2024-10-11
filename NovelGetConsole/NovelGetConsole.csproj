@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <None Update="appconf.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="list.json">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

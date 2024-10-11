@@ -73,6 +73,7 @@ namespace NovelReader
                     MainWindow.AppConfig.CurrentBookId = dataContext.BookId;
                     MainWindow.AppConfig.Save();
                     MainWindow.LoadNovelData();
+                    MainWindow.UpdateUI();  
                     this.Close();
                 }
             }

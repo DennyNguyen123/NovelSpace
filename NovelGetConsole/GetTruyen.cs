@@ -282,57 +282,66 @@ namespace GetTruyen
         public async Task<(int lastChapter, string? bookName, string? Author, string? ImageBase64)>
             GetLastChapter(string url, int trialcount = 0)
         {
-            int lastChap;
-            string? imageBase64 = null;
-
-            var page = await NewPage(url);
-
-            await Login(page, url);
-
-
-            var bookNameDiv = page.Locator("xpath=//html/body/div/div/div/div/div[1]/div[3]/div[2]");
-            var bookName = await bookNameDiv.TextContentAsync();
-
-            var authorNameDiv = page.Locator("xpath=//html/body/div/div/div/div/div[1]/div[3]/div[3]");
-            var authorName = await authorNameDiv.TextContentAsync();
-
-            var imageUrlDiv = page.Locator("xpath=/html/body/div/div/div/div/div[1]/div[2]/img");
-            var imageUrl = await imageUrlDiv.GetAttributeAsync("src");
-
-            if (!string.IsNullOrEmpty(imageUrl))
+            try
             {
-                imageBase64 = await Utils.DownloadImageAsBase64(imageUrl);
-            }
 
 
-            var lastChapterDiv = page.Locator("xpath=//html/body/div/div/div/div/div[2]/div[1]/div/div/div/div/div[1]/div[2]/div[1]");
-            await lastChapterDiv.ClickAsync();
-            await Task.Delay(1000);
+                int lastChap;
+                string? imageBase64 = null;
+
+                var page = await NewPage(url);
+
+                await Login(page, url);
 
 
-            var lastChapStr = page.Url.Split("-")?.ToList().LastOrDefault();
+                var bookNameDiv = page.Locator("xpath=//html/body/div/div/div/div/div[1]/div[3]/div[2]");
+                var bookName = await bookNameDiv.TextContentAsync();
 
+                var authorNameDiv = page.Locator("xpath=//html/body/div/div/div/div/div[1]/div[3]/div[3]");
+                var authorName = await authorNameDiv.TextContentAsync();
 
-            Int32.TryParse(lastChapStr?.Replace("/", ""), out lastChap);
+                var imageUrlDiv = page.Locator("xpath=/html/body/div/div/div/div/div[1]/div[2]/img");
+                var imageUrl = await imageUrlDiv.GetAttributeAsync("src");
 
-            await page.CloseAsync();
-
-            if (
-                lastChap == 0
-                || string.IsNullOrEmpty(bookName)
-                || string.IsNullOrEmpty(authorName)
-                || string.IsNullOrEmpty(imageBase64)
-
-                )
-            {
-                if (trialcount < _config.maxTrialGet)
+                if (!string.IsNullOrEmpty(imageUrl))
                 {
-                    await GetLastChapter(url, trialcount += 1);
+                    imageBase64 = await Utils.DownloadImageAsBase64(imageUrl);
                 }
+
+
+                var lastChapterDiv = page.Locator("xpath=//html/body/div/div/div/div/div[2]/div[1]/div/div/div/div/div[1]/div[2]/div[1]");
+                await lastChapterDiv.ClickAsync();
+                await Task.Delay(1000);
+
+
+                var lastChapStr = page.Url.Split("-")?.ToList().LastOrDefault();
+
+
+                Int32.TryParse(lastChapStr?.Replace("/", ""), out lastChap);
+
+                await page.CloseAsync();
+
+                if (
+                    lastChap == 0
+                    || string.IsNullOrEmpty(bookName)
+                    || string.IsNullOrEmpty(authorName)
+                    || string.IsNullOrEmpty(imageBase64)
+
+                    )
+                {
+                    if (trialcount < _config.maxTrialGet)
+                    {
+                        await GetLastChapter(url, trialcount += 1);
+                    }
+                }
+
+                return (lastChap, bookName, authorName, imageBase64);
             }
+            catch (Exception)
+            {
 
-
-            return (lastChap, bookName, authorName, imageBase64);
+            }
+            return default;
         }
 
 
@@ -711,7 +720,7 @@ namespace GetTruyen
 
         }
 
-        public async Task<List<TruyenContent>?> FixMissingInfo(string url, List<TruyenContent>? rs = null)
+        public async Task<List<TruyenContent>?> FixMissingInfo(string url, List<TruyenContent>? rs = null, bool saveBack = false)
         {
             (url, string filename, string jsonfile, string fileLog) = await GetFilePath(url, ".fix");
 
@@ -730,7 +739,10 @@ namespace GetTruyen
                     item.ImageBase64 = info.ImageBase64;
                 }
 
-                await SaveJsonToFile(rs, filename);
+                if (saveBack)
+                {
+                    await SaveJsonToFile(rs, filename);
+                }
 
                 await Utils.WriteLogWithConsole(filename, "Fix successfully");
 
@@ -764,28 +776,7 @@ namespace GetTruyen
 
             if (rs?.Count > 0)
             {
-                var firstChap = rs.FirstOrDefault();
-                var newNovel = new NovelContent();
-                newNovel.Author = firstChap?.Author;
-                newNovel.BookId = Guid.NewGuid().ToString();
-                newNovel.BookName = firstChap?.BookName;
-                newNovel.ImageBase64 = firstChap?.ImageBase64;
-                newNovel.MaxChapterCount = rs?.Count;
-                newNovel.URL = firstChap?.URL;
-
-                newNovel.Chapters = new List<ChapterContent>();
-                rs?.ForEach(x =>
-                {
-                    var chapter = new ChapterContent();
-                    chapter.IndexChapter = rs.IndexOf(x);
-                    chapter.ChapterId = Guid.NewGuid().ToString();
-                    chapter.Title = x.Title;
-                    chapter.URL = x.URL;
-
-                    chapter.Content = x.Content;
-                    newNovel.Chapters.Add(chapter);
-
-                });
+                var newNovel = GetNewNovelModel(rs);
 
                 var pathSaveNovel = $"{_config.outputPath}\\{filename}.novel";
 
@@ -798,6 +789,35 @@ namespace GetTruyen
 
             }
 
+        }
+
+
+        public NovelContent GetNewNovelModel(List<TruyenContent>? rs)
+        {
+            var firstChap = rs?.FirstOrDefault();
+            var newNovel = new NovelContent();
+            newNovel.Author = firstChap?.Author;
+            newNovel.BookId = Guid.NewGuid().ToString();
+            newNovel.BookName = firstChap?.BookName;
+            newNovel.ImageBase64 = firstChap?.ImageBase64;
+            newNovel.MaxChapterCount = rs?.Count;
+            newNovel.URL = firstChap?.URL;
+
+            newNovel.Chapters = new List<ChapterContent>();
+            rs?.ForEach(x =>
+            {
+                var chapter = new ChapterContent();
+                chapter.IndexChapter = rs.IndexOf(x);
+                chapter.ChapterId = Guid.NewGuid().ToString();
+                chapter.Title = x.Title;
+                chapter.URL = x.URL;
+
+                chapter.Content = x.Content;
+                newNovel.Chapters.Add(chapter);
+
+            });
+
+            return newNovel;
         }
 
 
@@ -849,6 +869,40 @@ namespace GetTruyen
             }
         }
 
+
+        public async Task FixAndImport()
+        {
+            using var appDbContext = new AppDbContext("D:\\Truyen\\SQLite\\data.db", new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>());
+
+            string? folderPath = "D:\\Truyen\\JSON\\docfull.org";
+
+            List<string> files = Directory.GetFiles(folderPath).ToList();
+
+
+            foreach (var item in files)
+            {
+                var filename = Path.GetFileNameWithoutExtension(item);
+
+                string url = $"https://docfull.vn/{filename}";
+
+                if (appDbContext.NovelContents.Any(x => x.URL == url))
+                {
+                    Console.WriteLine($"'{filename}' Already exist - Skipped");
+                    continue;
+                }
+
+                var rs = await FixMissingInfo(url);
+
+                var newModel = GetNewNovelModel(rs);
+
+                await appDbContext.ImportBookByJsonModel(newModel);
+
+                Console.WriteLine($"Done {filename}");
+
+            }
+
+
+        }
 
         public async Task Test()
         {

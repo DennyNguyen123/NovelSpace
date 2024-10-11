@@ -66,13 +66,8 @@ namespace GetTruyen
                     {
                         case "0":
                             {
-                                string text = "Hello World";
-                                string pattern = "Hello%"; // Ví dụ pattern
-
-                                bool result = text.Like(pattern);
-
-                                Console.WriteLine($"Kết quả: {result}");
-                                await getTruyen.Test();
+                                //await getTruyen.Test();
+                                await getTruyen.FixAndImport();
                                 Pause();
                                 break;
                             }

@@ -23,30 +23,38 @@ namespace GetTruyen
 
         public static async Task<T?> GetModelFromJsonFile<T>(string jsonpath, T? input = null, string? action = null) where T : class?
         {
-            if (input != null)
+            try
             {
-                return input;
-            }
 
-            if (File.Exists(jsonpath))
+
+                if (input != null)
+                {
+                    return input;
+                }
+
+                if (File.Exists(jsonpath))
+                {
+                    var fileName = Path.GetFileName(jsonpath);
+                    action = string.IsNullOrEmpty(action) ? null : $"[{action}]";
+
+                    var json = await File.ReadAllTextAsync(jsonpath);
+                    Console.WriteLine($"{action}[{fileName}] Read file done.");
+                    var rs = JsonSerializer.Deserialize<T>(json);
+
+                    Console.WriteLine($"{action}[{fileName}] Json to model done.");
+                    return rs;
+
+                }
+                else
+                {
+                    Console.WriteLine($"{action} Not found file");
+                }
+
+            }
+            catch (Exception)
             {
-                var fileName = Path.GetFileName(jsonpath);
-                action = string.IsNullOrEmpty(action) ? null : $"[{action}]";
-
-                var json = await File.ReadAllTextAsync(jsonpath);
-                Console.WriteLine($"{action}[{fileName}] Read file done.");
-                var rs = JsonSerializer.Deserialize<T>(json);
-
-                Console.WriteLine($"{action}[{fileName}] Json to model done.");
-                return rs;
 
             }
-            else
-            {
-                Console.WriteLine($"{action} Not found file");
-            }
-
-
             return default;
         }
 
