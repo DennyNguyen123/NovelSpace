@@ -60,7 +60,12 @@ namespace DataSharedLibrary
                 var lstChapter = this.ChapterContents.Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToList().Clone();
                 if (lstChapter?.Count() > 0)
                 {
-                    lstChapter.ForEach(x => x.Content = new List<string?>());
+                    lstChapter.ForEach(x =>
+                    {
+                        x.Content = new List<string?>();
+                        x.Title = $"[{x.IndexChapter + 1}/{novel.MaxChapterCount}] {x.Title}";
+                    }
+                    );
                     novel?.Chapters?.AddRange(lstChapter);
                 }
             }
@@ -70,7 +75,7 @@ namespace DataSharedLibrary
 
         public ChapterContent GetContentChapter(ChapterContent chapter)
         {
-            var content = this.ChapterDetailContents.Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x=>x.Index).Select(r => r.Content).ToList();
+            var content = this.ChapterDetailContents.Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x => x.Index).Select(r => r.Content).ToList();
             chapter.Content = content;
             return chapter;
         }
@@ -145,7 +150,7 @@ namespace DataSharedLibrary
             {
                 if (novelContent != null)
                 {
-                    if (this.NovelContents.Any(x=>x.URL == novelContent.URL))
+                    if (this.NovelContents.Any(x => x.URL == novelContent.URL))
                     {
                         Console.WriteLine("Already exist - skipped.");
                         return;
