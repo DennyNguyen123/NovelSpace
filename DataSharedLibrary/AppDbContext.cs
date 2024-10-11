@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Schema;
 
 namespace DataSharedLibrary
 {
@@ -76,7 +77,8 @@ namespace DataSharedLibrary
         public ChapterContent GetContentChapter(ChapterContent chapter)
         {
             var content = this.ChapterDetailContents.Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x => x.Index).Select(r => r.Content).ToList();
-            chapter.Content = content;
+
+            chapter.Content = content?.Clone().Where(x => !x.IsHtml()).ToList();
             return chapter;
         }
 
