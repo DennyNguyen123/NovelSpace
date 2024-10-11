@@ -70,7 +70,7 @@ namespace NovelReader
 
             if (openFileDialog.ShowDialog() == true)
             {
-                string selectedFilePath = openFileDialog.FileName;
+                string selectedFilePath = openFileDialog.FileName; 
                 return selectedFilePath;
             }
             return currentPath;

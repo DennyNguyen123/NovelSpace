@@ -61,6 +61,22 @@ namespace NovelReader
         }
 
 
+        private void Border_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            // Lấy item tương ứng từ Border
+            var border = sender as Border;
+            if (border != null)
+            {
+                var dataContext = border.DataContext as NovelContent;
+                if (dataContext != null)
+                {
+                    MainWindow.AppConfig.CurrentBookId = dataContext.BookId;
+                    MainWindow.AppConfig.Save();
+                    MainWindow.LoadNovelData();
+                    this.Close();
+                }
+            }
+        }
     }
 
 

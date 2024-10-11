@@ -10,15 +10,19 @@
         <ItemsControl x:Name="CardItemsControl">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <WrapPanel />
+                    <WrapPanel IsItemsHost="True" Orientation="Horizontal" />
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border BorderBrush="#ddd" BorderThickness="1" Margin="10" CornerRadius="5" Padding="10" Background="White">
-                        <StackPanel>
-                            <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImageConverter}}" Width="100" Height="100" Margin="0,0,0,10"/>
-                            <TextBlock Text="{Binding BookName}" FontWeight="Bold" FontSize="16"/>
+                    <Border BorderBrush="#ddd" BorderThickness="1" Margin="10" CornerRadius="5" Padding="10" Background="White"
+                            MouseLeftButtonUp="Border_MouseLeftButtonUp"
+                            >
+                        <StackPanel Width="150">
+                            <!-- Cố định chiều rộng card -->
+                            <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImageConverter}}" 
+                               Width="100" Height="100" Margin="0,0,0,10"/>
+                            <TextBlock Text="{Binding BookName}" FontWeight="Bold" FontSize="16" TextWrapping="Wrap"/>
                             <TextBlock Text="{Binding Author}" Foreground="Gray" FontSize="12"/>
                         </StackPanel>
                     </Border>

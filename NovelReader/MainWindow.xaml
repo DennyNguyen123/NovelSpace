@@ -68,7 +68,7 @@
                     </MenuItem.Header>
                 </MenuItem>
 
-                <MenuItem Click="ToggleTOC_Click">
+                <MenuItem Click="ImportBook_Click">
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal">
                             <!-- Biểu tượng của MenuItem -->

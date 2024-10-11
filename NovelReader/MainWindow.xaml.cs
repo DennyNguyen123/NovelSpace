@@ -11,7 +11,9 @@ using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using Brushes = System.Windows.Media.Brushes;
 using Hardcodet.Wpf.TaskbarNotification;
 using DataSharedLibrary;
-using System.Data.Entity; // Thêm thư viện Drawing để dùng Icon
+using System.Data.Entity;
+using System.IO;
+using System.Text.Json; // Thêm thư viện Drawing để dùng Icon
 
 namespace NovelReader
 {
@@ -332,7 +334,7 @@ namespace NovelReader
 
         }
 
-        private void LoadNovelData()
+        public void LoadNovelData()
         {
             var dbPath = AppConfig._sqlitepath;
             var bookId = AppConfig.CurrentBookId;
@@ -633,21 +635,6 @@ namespace NovelReader
         #endregion TTS
 
         #region Button_Action
-
-        private void ToggleTOC_Click(object sender, RoutedEventArgs e)
-        {
-            // Toggle visibility of the left column
-            if (leftColumn.Width != new GridLength(0, GridUnitType.Star))
-            {
-                leftColumn.Width = new GridLength(0, GridUnitType.Star); // Hide the column by setting its width to 0
-                lstContent.Focus();
-            }
-            else
-            {
-                leftColumn.Width = new GridLength(3, GridUnitType.Star); // Show the column by restoring its width to 30%
-            }
-        }
-
         private void OpenConfig_Click(object sender, RoutedEventArgs e)
         {
             AppConfigWindows config = new AppConfigWindows();
@@ -713,12 +700,48 @@ namespace NovelReader
 
 
         #region Menu Region
+
+        private void ToggleTOC_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle visibility of the left column
+            if (leftColumn.Width != new GridLength(0, GridUnitType.Star))
+            {
+                leftColumn.Width = new GridLength(0, GridUnitType.Star); // Hide the column by setting its width to 0
+                lstContent.Focus();
+            }
+            else
+            {
+                leftColumn.Width = new GridLength(3, GridUnitType.Star); // Show the column by restoring its width to 30%
+            }
+        }
+
         private void OpenBook_Click(object sender, RoutedEventArgs e)
         {
             OpenBookWindow openBookWindow = new OpenBookWindow();
             openBookWindow.Owner = this;
             openBookWindow.ShowDialog();
         }
+
+
+        private void ImportBook_Click(object sender, RoutedEventArgs e)
+        {
+            var filename = WpfUtils.GetFilePath(null, "Novel files (*.novel)|*.novel|EPUB files (*.epub)|*.epub");
+            if (!string.IsNullOrEmpty(filename))
+            {
+                var ext = Path.GetExtension(filename);
+                if (ext == ".novel")
+                {
+                    Task.Run(async () => { await _AppDbContext.ImportBookByJsonModel(filename); });
+
+                }
+
+
+            }
+
+        }
+
+
+
         #endregion Menu Region
 
     }

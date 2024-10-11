@@ -3,6 +3,7 @@ using System.ComponentModel.Design;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using DataSharedLibrary;
 using Microsoft.Playwright;
 
 namespace GetTruyen
@@ -14,6 +15,17 @@ namespace GetTruyen
         {
             Console.WriteLine("Nhấn phím bất kỳ để tiếp tục...");
             Console.ReadKey();
+        }
+
+        public static (string url, bool isCheck) GetParam()
+        {
+            Console.Write("Nhập url: ");
+            //string? url = Console.ReadLine()??"";
+            string url = "https://docfull.vn/thien-anh-dich-full/";
+            Console.Write("Check valid json? (Y,N) (Default N)");
+            string? inIsCheck = Console.ReadLine();
+            bool isCheck = inIsCheck == "Y" ? true : false;
+            return (url, isCheck);
         }
 
         public static async Task MenuCommand()
@@ -54,11 +66,13 @@ namespace GetTruyen
                     {
                         case "0":
                             {
-                                string logfile = $"{getTruyen._config.logPath}\\test.log";
-                                //var fs = Utils.CreateFileIfNotExist($"{getTruyen._config.logPath}\\test.log");
-                                await Utils.WriteLogWithConsole(logfile, "test1");
-                                await Task.Delay(10000);
-                                await Utils.WriteLogWithConsole(logfile, "test2");
+                                string text = "Hello World";
+                                string pattern = "Hello%"; // Ví dụ pattern
+
+                                bool result = text.Like(pattern);
+
+                                Console.WriteLine($"Kết quả: {result}");
+                                await getTruyen.Test();
                                 Pause();
                                 break;
                             }
@@ -120,6 +134,11 @@ namespace GetTruyen
                             bool isCheck1 = inIsCheck1 == "Y" ? true : false;
 
                             await getTruyen.ConvertToSqlite(sqliteUrl, isCheck1);
+                            Pause();
+                            break;
+                        
+                        case "8":
+                            await getTruyen.ConvertToNovelFile(GetParam());
                             Pause();
                             break;
                         case "e":

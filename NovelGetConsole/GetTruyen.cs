@@ -4,14 +4,16 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Http;
 using System.Reflection.Metadata;
+using System.Security.Policy;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using DataSharedLibrary;
-using EpubSharp;
 using Flurl;
+using Flurl.Http;
 using GetTruyen;
 using Microsoft.Playwright;
+using QuickEPUB;
 
 namespace GetTruyen
 {
@@ -746,6 +748,60 @@ namespace GetTruyen
             return rs;
         }
 
+        public async Task ConvertToNovelFile((string url, bool isCheck) param)
+        {
+            (string url, string filename, string jsonfile, string fileLog) = await GetFilePath(param.url, ".cnovel");
+            List<TruyenContent>? rs = null;
+
+            if (param.isCheck)
+            {
+                rs = await CheckAndFix(url);
+            }
+            else
+            {
+                rs = await Utils.GetModelFromJsonFile<List<TruyenContent>>(jsonfile);
+            }
+
+            if (rs?.Count > 0)
+            {
+                var firstChap = rs.FirstOrDefault();
+                var newNovel = new NovelContent();
+                newNovel.Author = firstChap?.Author;
+                newNovel.BookId = Guid.NewGuid().ToString();
+                newNovel.BookName = firstChap?.BookName;
+                newNovel.ImageBase64 = firstChap?.ImageBase64;
+                newNovel.MaxChapterCount = rs?.Count;
+                newNovel.URL = firstChap?.URL;
+
+                newNovel.Chapters = new List<ChapterContent>();
+                rs?.ForEach(x =>
+                {
+                    var chapter = new ChapterContent();
+                    chapter.IndexChapter = rs.IndexOf(x);
+                    chapter.ChapterId = Guid.NewGuid().ToString();
+                    chapter.Title = x.Title;
+                    chapter.URL = x.URL;
+
+                    chapter.Content = x.Content;
+                    newNovel.Chapters.Add(chapter);
+
+                });
+
+                var pathSaveNovel = $"{_config.outputPath}\\{filename}.novel";
+
+                //var json = Convert.ToBase64String(JsonSerializer.SerializeToUtf8Bytes(newNovel));
+
+                var json = JsonSerializer.Serialize(newNovel);
+
+                await System.IO.File.WriteAllTextAsync(pathSaveNovel, json);
+                Console.WriteLine("Done.");
+
+            }
+
+        }
+
+
+
         public async Task ConvertToEpub(string url, bool isCheck = true)
         {
 
@@ -769,21 +825,55 @@ namespace GetTruyen
                 string? epubName = $"{firstChap?.BookName} - {firstChap?.Author}";
                 string epubFileName = $"{_config.epubOutputPath}\\{filename}.epub";
 
-                EpubWriter writer = new EpubWriter();
-                writer.SetCover(Convert.FromBase64String(firstChap?.ImageBase64), ImageFormat.Jpeg);
-                writer.SetTitle(epubName);
 
+                var doc = new Epub(epubName, firstChap?.Author);
+
+                var stream = new MemoryStream(Convert.FromBase64String(firstChap?.ImageBase64));
+                doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
                 foreach (var item in rs)
                 {
                     item?.Content?.ForEach(x => x?.Replace("/n", "<br>"));
                     string html = @$"<h2 style=""color:red"">{item?.Title}</h2><br><br><br>{string.Join("<br><br>", item.Content)}<br><br><br>";
-                    writer.AddChapter(item?.Title, html);
+                    doc.AddSection(item?.Title, html);
+
                 }
 
+                using (var fs = new FileStream(epubFileName, FileMode.Create))
+                {
+                    doc.Export(fs);
+                }
 
-                writer.Write(epubFileName);
-                await Utils.WriteLogWithConsole(fileLog, "Convert to epub done.");
+                Console.WriteLine("Done.");
+
+
             }
+        }
+
+
+        public async Task Test()
+        {
+            string url = "https://docfull.vn/thanh-khu-dich-full/";
+            (url, string filename, string jsonfile, string fileLog) = await GetFilePath(url, ".cepub");
+
+
+            string epubFileName = $"{_config.epubOutputPath}\\{filename}.epub";
+
+            var epub = VersOne.Epub.EpubReader.ReadBook(epubFileName);
+            var chaptitle = epub?.Navigation[0]?.NestedItems[2].Title;
+            var content = epub?.Navigation[0]?.NestedItems[2].HtmlContentFile.Content;
+
+
+            var lstContent = content.Split("<br><br>").ToList();
+
+            lstContent.ForEach(x =>
+            {
+                if (x.Like("%<h2>%"))
+                {
+                    lstContent.Remove(x);
+                }
+            });
+
+
         }
 
 

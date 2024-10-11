@@ -26,14 +26,22 @@ namespace DataSharedLibrary
 
             }
 
-            return default (T);
+            return default(T);
+        }
+
+
+        public static bool Like(this string input, string pattern)
+        {
+            // Thay thế ký tự '%' bằng ký tự đại diện
+            string regexPattern = "^" + pattern.Replace("%", ".*").Replace("_", ".") + "$";
+            return System.Text.RegularExpressions.Regex.IsMatch(input, regexPattern);
         }
     }
 
 
     public class Utils
     {
-        
+
 
     }
 }
