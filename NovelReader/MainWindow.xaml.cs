@@ -171,7 +171,7 @@ namespace NovelReader
         {
 
             //Hide leftsidebar
-            //leftColumn.Width = new GridLength(0);
+            leftColumn.Width = new GridLength(0);
 
             this.Width = AppConfig.LastWidth;
             this.Height = AppConfig.LastHeigh;
