@@ -13,6 +13,16 @@ using System.Collections.Generic;
 namespace DataSharedLibrary
 {
 
+    public class CurrentReader
+    {
+        [Key]
+        public string? BookId { get; set; }
+        public int CurrentChapter { get; set; }
+        public int CurrentLine { get; set; }
+        public int CurrentPosition { get; set; }
+
+    }
+
     public class NovelContent
     {
         [Key]

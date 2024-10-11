@@ -4,5 +4,6 @@
              xmlns:local="clr-namespace:NovelReader"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <local:Base64ToImageConverter x:Key="Base64ToImageConverter"/>
     </Application.Resources>
 </Application>

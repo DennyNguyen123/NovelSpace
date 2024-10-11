@@ -35,6 +35,8 @@ namespace NovelReader
             }
         }
 
+        public CurrentReader _current_reader { get; set; }
+
         // Phương thức để thông báo thay đổi thuộc tính
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
@@ -43,9 +45,6 @@ namespace NovelReader
         }
 
         private bool _isSpeeking;
-        private bool _isMouseClicked;
-        private bool _isListChapterClicked;
-
         public AppDbContext _AppDbContext = null;
 
         public Style listBoxItemStyle
@@ -209,8 +208,8 @@ namespace NovelReader
 
         private void UpdateHightlightFirst()
         {
-            string? currentLine = SelectedChapter?.Content?[AppConfig.CurrentLine];
-            var curPos = string.IsNullOrEmpty(currentLine) ? 0 : AppConfig.CurrentPosition;
+            string? currentLine = SelectedChapter?.Content?[_current_reader.CurrentLine];
+            var curPos = string.IsNullOrEmpty(currentLine) ? 0 : _current_reader.CurrentPosition;
             string selectedText = WpfUtils.GetTextUntilSpace(currentLine ?? "", curPos);
 
 
@@ -220,31 +219,31 @@ namespace NovelReader
         private void MoveNextLine()
         {
 
-            if (AppConfig.CurrentLine < SelectedChapter?.Content?.Count - 1)
+            if (_current_reader.CurrentLine < SelectedChapter?.Content?.Count - 1)
             {
-                AppConfig.CurrentLine += 1;
+                _current_reader.CurrentLine += 1;
             }
             else
             {
-                if (AppConfig.CurrentChapter < Novel?.Chapters?.Count - 1)
+                if (_current_reader.CurrentChapter < Novel?.Chapters?.Count - 1)
                 {
-                    AppConfig.CurrentLine = 0;
-                    AppConfig.CurrentChapter += 1;
-                    var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    _current_reader.CurrentLine = 0;
+                    _current_reader.CurrentChapter += 1;
+                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
                     SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
                 else//Move to first
                 {
-                    AppConfig.CurrentLine = 0;
-                    AppConfig.CurrentChapter = 0;
-                    var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    _current_reader.CurrentLine = 0;
+                    _current_reader.CurrentChapter = 0;
+                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
                     SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
             }
 
             //ContinueSpeech();
 
-            AppConfig.CurrentPosition = 0;
+            _current_reader.CurrentPosition = 0;
 
             ModifySelectedChapter();
         }
@@ -257,10 +256,10 @@ namespace NovelReader
             {
                 var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
                 SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                
-                AppConfig.CurrentChapter = newIndex.Value;
-                AppConfig.CurrentLine = 0;
-                AppConfig.CurrentPosition = 0;
+
+                _current_reader.CurrentChapter = newIndex.Value;
+                _current_reader.CurrentLine = 0;
+                _current_reader.CurrentPosition = 0;
                 ModifySelectedChapter();
             }
         }
@@ -268,20 +267,20 @@ namespace NovelReader
         private void MovePrevLine()
         {
 
-            if (AppConfig.CurrentLine > 0)
+            if (_current_reader.CurrentLine > 0)
             {
-                AppConfig.CurrentLine -= 1;
+                _current_reader.CurrentLine -= 1;
             }
             else
             {
-                if (AppConfig.CurrentChapter > 0)
+                if (_current_reader.CurrentChapter > 0)
                 {
-                    AppConfig.CurrentChapter -= 1;
-                    var selectedChapter = Novel?.Chapters?[AppConfig.CurrentChapter] ?? new ChapterContent();
+                    _current_reader.CurrentChapter -= 1;
+                    var selectedChapter = Novel?.Chapters?[_current_reader.CurrentChapter] ?? new ChapterContent();
                     SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
                     var curLine = (SelectedChapter?.Content?.Count ?? 1) - 1;
-                    AppConfig.CurrentLine = curLine;
+                    _current_reader.CurrentLine = curLine;
                 }
             }
 
@@ -289,7 +288,7 @@ namespace NovelReader
 
             //ContinueSpeech();
 
-            AppConfig.CurrentPosition = 0;
+            _current_reader.CurrentPosition = 0;
 
             ModifySelectedChapter();
         }
@@ -303,9 +302,9 @@ namespace NovelReader
                 var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
                 SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
-                AppConfig.CurrentChapter = newIndex.Value;
-                AppConfig.CurrentLine = 0;
-                AppConfig.CurrentPosition = 0;
+                _current_reader.CurrentChapter = newIndex.Value;
+                _current_reader.CurrentLine = 0;
+                _current_reader.CurrentPosition = 0;
                 ModifySelectedChapter();
             }
         }
@@ -326,7 +325,7 @@ namespace NovelReader
                             item?.Content?.RemoveAll(x => string.IsNullOrEmpty(x));
                         }
 
-                        SelectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                        SelectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
                     }
                 }
             }
@@ -340,13 +339,16 @@ namespace NovelReader
             var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
             _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
 
+            _current_reader = _AppDbContext.GetCurrentReader(bookId);
+
+
             Novel = _AppDbContext.GetNovel(bookId);
 
             if (Novel != null)
             {
-                if (Novel.Chapters != null)
+                if (Novel.Chapters?.Count > 0)
                 {
-                    var selectedChapter = Novel.Chapters[AppConfig.CurrentChapter];
+                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
                     SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
             }
@@ -354,12 +356,14 @@ namespace NovelReader
 
         private void ModifySelectedChapter()
         {
-            lstContent.SelectedIndex = AppConfig.CurrentLine;
+            //lstContent.SelectedIndex = _current_reader.CurrentLine;
+            lstContent.SelectedIndex = _current_reader.CurrentLine;
             ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
             lstContent.ScrollIntoView(lstContent.SelectedItem);
             ContinueSpeech();
-            AppConfig.Save();
             UpdateHightlightFirst();
+            _AppDbContext.CurrentReader.Update(_current_reader);
+            _AppDbContext.SaveChanges();
         }
 
 
@@ -522,8 +526,8 @@ namespace NovelReader
             {
                 if (listView.IsMouseCaptured)
                 {
-                    AppConfig.CurrentLine = lstContent.SelectedIndex;
-                    AppConfig.CurrentPosition = 0;
+                    _current_reader.CurrentLine = lstContent.SelectedIndex;
+                    _current_reader.CurrentPosition = 0;
                     ModifySelectedChapter();
                 }
             }
@@ -537,9 +541,9 @@ namespace NovelReader
                 if (listView.IsMouseCaptured)
                 {
                     SelectedChapter = _AppDbContext.GetContentChapter(chapter);
-                    AppConfig.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
-                    AppConfig.CurrentLine = 0;
-                    AppConfig.CurrentPosition = 0;
+                    _current_reader.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
+                    _current_reader.CurrentLine = 0;
+                    _current_reader.CurrentPosition = 0;
                     ModifySelectedChapter();
                 }
             }
@@ -571,9 +575,9 @@ namespace NovelReader
             if (_isSpeeking)
             {
 
-                if (AppConfig.CurrentLine >= 0)
+                if (_current_reader.CurrentLine >= 0)
                 {
-                    voiceText = SelectedChapter.Content[AppConfig.CurrentLine];
+                    voiceText = SelectedChapter.Content[_current_reader.CurrentLine];
                 }
 
                 SpeakInBackground(voiceText);
@@ -594,7 +598,7 @@ namespace NovelReader
                 {
                     speechSynthesizer.SpeakAsyncCancelAll();
 
-                    //if (AppConfig.CurrentPosition > 0)
+                    //if (_current_reader.CurrentPosition > 0)
                     //{
                     //    text = text?.Substring(0);
                     //}
@@ -621,7 +625,7 @@ namespace NovelReader
         private void SpeechSynthesizer_SpeakProgress(object sender, SpeakProgressEventArgs e)
         {
 
-            AppConfig.CurrentPosition = e.CharacterPosition;
+            _current_reader.CurrentPosition = e.CharacterPosition;
             AppConfig.Save();
 
             HighlightSpeechingSelected(e.CharacterPosition, e.Text);
@@ -633,9 +637,10 @@ namespace NovelReader
         private void ToggleTOC_Click(object sender, RoutedEventArgs e)
         {
             // Toggle visibility of the left column
-            if (leftColumn.Width != new GridLength(0))
+            if (leftColumn.Width != new GridLength(0, GridUnitType.Star))
             {
-                leftColumn.Width = new GridLength(0); // Hide the column by setting its width to 0
+                leftColumn.Width = new GridLength(0, GridUnitType.Star); // Hide the column by setting its width to 0
+                lstContent.Focus();
             }
             else
             {
@@ -703,8 +708,18 @@ namespace NovelReader
 
 
 
+
         #endregion Button_Action
 
+
+        #region Menu Region
+        private void OpenBook_Click(object sender, RoutedEventArgs e)
+        {
+            OpenBookWindow openBookWindow = new OpenBookWindow();
+            openBookWindow.Owner = this;
+            openBookWindow.ShowDialog();
+        }
+        #endregion Menu Region
 
     }
 }

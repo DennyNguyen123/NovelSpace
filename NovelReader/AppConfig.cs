@@ -11,9 +11,9 @@ namespace NovelReader
 {
     public class AppConfig
     {
-        public int CurrentChapter { get; set; }
-        public int CurrentLine { get; set; }
-        public int CurrentPosition { get; set; }
+        //public int CurrentChapter { get; set; }
+        //public int CurrentLine { get; set; }
+        //public int CurrentPosition { get; set; }
         public string? FolderTemp { get; set; } = "./temp";
         public string? CurrentBookId { get; set; }
         public int FontSize { get; set; } = 14;

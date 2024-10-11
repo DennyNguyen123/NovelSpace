@@ -1,4 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DataSharedLibrary
 {
@@ -9,6 +11,11 @@ namespace DataSharedLibrary
         public AppDbContext(string dbPath, DbContextOptions<AppDbContext> options) : base(options)
         {
             _dbPath = dbPath;
+
+            this.Database.Migrate();
+
+
+
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -22,15 +29,36 @@ namespace DataSharedLibrary
         public DbSet<NovelContent> NovelContents { get; set; }
         public DbSet<ChapterContent> ChapterContents { get; set; }
         public DbSet<ChapterDetailContent> ChapterDetailContents { get; set; }
+        public DbSet<CurrentReader> CurrentReader { get; set; }
+
+
+        public CurrentReader GetCurrentReader(string bookId)
+        {
+            var cur = this.CurrentReader.Where(x => x.BookId == bookId).FirstOrDefault();
+            if (cur == null)
+            {
+                cur = new CurrentReader();
+                cur.BookId = bookId;
+                cur.CurrentChapter = 0;
+                cur.CurrentLine = 0;
+                cur.CurrentPosition = 0;
+                this.CurrentReader.Add(cur);
+                this.SaveChanges();
+            }
+            return cur;
+
+        }
+
 
         public NovelContent? GetNovel(string? bookId)
         {
-            var novel = this.NovelContents.Where(x => x.BookId == bookId).FirstOrDefault();
+            var novel = this.NovelContents.Where(x => x.BookId == bookId).FirstOrDefault().Clone();
             if (novel != null)
             {
-                var lstChapter = this.ChapterContents.Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter);
-                if (lstChapter != null)
+                var lstChapter = this.ChapterContents.Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToList().Clone();
+                if (lstChapter?.Count() > 0)
                 {
+                    lstChapter.ForEach(x => x.Content = new List<string?>());
                     novel?.Chapters?.AddRange(lstChapter);
                 }
             }
