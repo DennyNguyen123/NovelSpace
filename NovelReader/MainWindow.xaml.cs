@@ -167,6 +167,13 @@ namespace NovelReader
 
         #region Function Logical
 
+        public void ClearRAM()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
         public void UpdateUIFirst()
         {
 
@@ -357,6 +364,7 @@ namespace NovelReader
             //UpdateHightlightFirst();
             _AppDbContext.CurrentReader.Update(_current_reader);
             _AppDbContext.SaveChanges();
+            ClearRAM();
         }
 
 
