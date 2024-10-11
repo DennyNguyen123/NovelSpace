@@ -94,6 +94,7 @@ namespace DataSharedLibrary
                     newNovel.BookId = novelContent.BookId ?? Guid.NewGuid().ToString();
                     newNovel.MaxChapterCount = novelContent.MaxChapterCount;
                     newNovel.BookName = novelContent.BookName;
+                    newNovel.ImageBase64 = novelContent.ImageBase64;
 
 
                     var lstChapter = new List<ChapterContent>();
@@ -102,10 +103,10 @@ namespace DataSharedLibrary
                     {
                         var newChap = new ChapterContent();
                         newChap.Title = chapter.Title;
-                        newChap.IndexChapter =novelContent.Chapters.IndexOf(chapter);
+                        newChap.IndexChapter = novelContent.Chapters.IndexOf(chapter);
                         newChap.URL = chapter.URL;
                         newChap.BookId = newNovel.BookId;
-                        newChap.ChapterId= chapter.ChapterId ?? Guid.NewGuid().ToString();
+                        newChap.ChapterId = chapter.ChapterId ?? Guid.NewGuid().ToString();
                         lstChapter.Add(newChap);
 
                         chapter?.Content?.ForEach(con =>
@@ -126,12 +127,14 @@ namespace DataSharedLibrary
                     await this.ChapterDetailContents.AddRangeAsync(lstChapterDetail);
 
                     await transaction.CommitAsync();
+                    await this.SaveChangesAsync();
 
                 }
             }
             catch (Exception)
             {
-               transaction?.Rollback();
+                transaction?.Rollback();
+                await this.SaveChangesAsync();
             }
         }
 
