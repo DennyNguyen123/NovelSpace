@@ -190,6 +190,7 @@ namespace NovelReader
                         {
                             var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
                             SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                            this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
                         }
                     }
 
@@ -210,11 +211,11 @@ namespace NovelReader
 
             InitTriggerChangeColor();
 
-            if (Novel != null)
-            {
-                this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
-                this.Focus();
-            }
+            //if (Novel != null)
+            //{
+            //    this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
+            //    this.Focus();
+            //}
 
 
         }
