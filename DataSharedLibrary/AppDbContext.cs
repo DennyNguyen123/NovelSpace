@@ -55,10 +55,10 @@ namespace DataSharedLibrary
 
         public NovelContent? GetNovel(string? bookId)
         {
-            var novel = this.NovelContents.Where(x => x.BookId == bookId).FirstOrDefault().Clone();
+            var novel = this.NovelContents.AsNoTracking().Where(x => x.BookId == bookId).FirstOrDefault().Clone();
             if (novel != null)
             {
-                var lstChapter = this.ChapterContents.Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToList().Clone();
+                var lstChapter = this.ChapterContents.AsNoTracking().Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToList();
                 if (lstChapter?.Count() > 0)
                 {
                     lstChapter.ForEach(x =>
@@ -76,9 +76,9 @@ namespace DataSharedLibrary
 
         public ChapterContent GetContentChapter(ChapterContent chapter)
         {
-            var content = this.ChapterDetailContents.Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x => x.Index).Select(r => r.Content).ToList();
+            var content = this.ChapterDetailContents.AsNoTracking().Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x => x.Index).Select(r => r.Content).ToList();
 
-            chapter.Content = content?.Clone().Where(x => !x.IsHtml()).ToList();
+            chapter.Content = content?.Where(x => !x.IsHtml()).ToList();
             return chapter;
         }
 

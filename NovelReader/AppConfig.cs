@@ -11,9 +11,6 @@ namespace NovelReader
 {
     public class AppConfig
     {
-        //public int CurrentChapter { get; set; }
-        //public int CurrentLine { get; set; }
-        //public int CurrentPosition { get; set; }
         public string? FolderTemp { get; set; } = "./temp";
         public string? CurrentBookId { get; set; }
         public int FontSize { get; set; } = 14;
@@ -31,7 +28,7 @@ namespace NovelReader
         public double LastHeigh { get; set; } = 300;
         public double LastTop { get; set; } = 300;
         public double LastLeft { get; set; } = 300;
-
+        public double TextMargin { get; set; } = 30;
         public string _sqlitepath { get => $"{this.FolderTemp}//data.db"; }
 
         private string _savepath = "appconfig.json";

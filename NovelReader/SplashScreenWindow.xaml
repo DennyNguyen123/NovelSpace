@@ -1,0 +1,21 @@
+﻿<Window x:Class="NovelReader.SplashScreenWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NovelReader"
+        mc:Ignorable="d"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        ShowInTaskbar="False"
+        Height="200" Width="400"
+        >
+    <Grid Background="White">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="txtStatus" Text="Loading, please wait..." FontSize="24"/>
+            <ProgressBar x:Name="progressBar" Width="200" Height="20" IsIndeterminate="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

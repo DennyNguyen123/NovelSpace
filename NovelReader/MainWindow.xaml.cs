@@ -24,8 +24,15 @@ namespace NovelReader
         public SpeechSynthesizer speechSynthesizer;
         public AppConfig AppConfig { get; set; }
 
-
-        public NovelContent Novel { get; set; }
+        private NovelContent _novel;
+        public NovelContent Novel {
+            get { return _novel; }
+            set
+            {
+                _novel = value;
+                OnPropertyChanged(nameof(Novel));
+            }
+        }
 
         private ChapterContent _selectedChapter;
         public ChapterContent SelectedChapter
@@ -39,6 +46,8 @@ namespace NovelReader
         }
 
         public CurrentReader _current_reader { get; set; }
+
+        public Thickness contentThinkness { get; set; }
 
         // Phương thức để thông báo thay đổi thuộc tính
         public event PropertyChangedEventHandler PropertyChanged;
@@ -59,29 +68,18 @@ namespace NovelReader
 
         public MainWindow()
         {
-
-            AppConfig = new AppConfig();
-            AppConfig.Get();
-            LoadNovelData();
-
-            InitTTS();
-            InitKeyHook();
-
-
-            InitializeComponent();
-
-            UpdateUIFirst();
-            InitTaskBarIcon();
             
-            DataContext = this;
-
+            UpdateUI();
+            InitTTS();
+            InitKeyHook(); 
+            InitTaskBarIcon();
         }
 
         protected override void OnContentRendered(EventArgs e)
         {
-            UpdateUI();
             base.OnContentRendered(e);
         }
+
 
         protected override void OnClosed(EventArgs e)
         {
@@ -142,6 +140,10 @@ namespace NovelReader
 
         private void InitKeyHook()
         {
+            if (_keyboardHook != null)
+            {
+                _keyboardHook?.Dispose();
+            }
             _keyboardHook = new KeyboardHook();
             _keyboardHook.MediaKeyPressed += KeyboardHook_MediaKeyPressed;
         }
@@ -167,15 +169,27 @@ namespace NovelReader
 
         #region Function Logical
 
-        public void ClearRAM()
+        public void UpdateUI()
         {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-        }
+            AppConfig = new AppConfig();
+            AppConfig.Get();
 
-        public void UpdateUIFirst()
-        {
+            LoadNovelData();
+
+            InitializeComponent();
+
+            DataContext = this;
+
+
+            InitTriggerChangeColor();
+            if (Novel != null)
+            {
+                this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
+                this.Focus();
+                lstContent.Focus();
+                ModifySelectedChapter();
+
+            }
 
             //Hide leftsidebar
             leftColumn.Width = new GridLength(0);
@@ -184,51 +198,61 @@ namespace NovelReader
             this.Height = AppConfig.LastHeigh;
             this.Left = AppConfig.LastLeft;
             this.Top = AppConfig.LastTop;
+            
+
+
+
 
         }
 
-        public void InitTriggerChangeColor()
+        public void LoadNovelData()
         {
-            // Tạo một style mới cho ListBoxItem
-            listBoxItemStyle = new Style(typeof(ListBoxItem));
-
-            // Đặt event trigger hoặc style trigger nếu cần
-            var trigger = new Trigger
+            this.RunTaskWithSplash(() =>
             {
-                Property = ListBoxItem.IsSelectedProperty,
-                Value = true
-            };
-            trigger.Setters.Add(new Setter(ListBoxItem.ForegroundProperty, WpfUtils.ConvertHtmlColorToBrush(AppConfig.SelectedParagraphColor)));
+                var dbPath = AppConfig._sqlitepath;
+                var bookId = AppConfig.CurrentBookId;
 
-            // Thêm trigger vào style
-            listBoxItemStyle.Triggers.Add(trigger);
+
+                var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
+                _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+
+                _current_reader = _AppDbContext.GetCurrentReader(bookId);
+
+
+                Novel = _AppDbContext.GetNovel(bookId);
+
+                if (Novel != null)
+                {
+                    if (Novel.Chapters?.Count > 0)
+                    {
+                        var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
+                        SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                    }
+                }
+
+            });
         }
 
-        public void UpdateUI()
+        private void ModifySelectedChapter()
         {
-            InitTriggerChangeColor();
-            if (Novel != null)
+            try
             {
-                this.Title = $"{Novel.BookName} - {Novel.Author}";
-
-                ModifySelectedChapter();
+                lstContent.SelectedIndex = _current_reader.CurrentLine;
+                ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
+                lstContent.ScrollIntoView(lstContent.SelectedItem);
+                ContinueSpeech();
+                //UpdateHightlightFirst();
+                _AppDbContext.CurrentReader.Update(_current_reader);
+                _AppDbContext.SaveChanges();
+                WpfUtils.ClearRAM();
             }
+            catch (Exception)
+            {
 
-            //Change UI
-            OnPropertyChanged("");
+            }
         }
 
-        private void UpdateHightlightFirst()
-        {
-            string? currentLine = SelectedChapter?.Content?[_current_reader.CurrentLine];
-            var curPos = string.IsNullOrEmpty(currentLine) ? 0 : _current_reader.CurrentPosition;
-            string selectedText = WpfUtils.GetTextUntilSpace(currentLine ?? "", curPos);
-
-
-            HighlightSpeechingSelected(curPos, selectedText);
-        }
-
-        private void MoveNextLine()
+        public void MoveNextLine()
         {
 
             if (_current_reader.CurrentLine < SelectedChapter?.Content?.Count - 1)
@@ -320,51 +344,35 @@ namespace NovelReader
                 ModifySelectedChapter();
             }
         }
+        #endregion Function Logical
 
-        public void LoadNovelData()
+        #region UI Change funtion
+
+        public void InitTriggerChangeColor()
         {
-            var dbPath = AppConfig._sqlitepath;
-            var bookId = AppConfig.CurrentBookId;
+            // Tạo một style mới cho ListBoxItem
+            listBoxItemStyle = new Style(typeof(ListBoxItem));
 
-
-            if (_AppDbContext == null)
+            // Đặt event trigger hoặc style trigger nếu cần
+            var trigger = new Trigger
             {
-                var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
-                _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
-            }
+                Property = ListBoxItem.IsSelectedProperty,
+                Value = true
+            };
+            trigger.Setters.Add(new Setter(ListBoxItem.ForegroundProperty, WpfUtils.ConvertHtmlColorToBrush(AppConfig.SelectedParagraphColor)));
 
-            _current_reader = _AppDbContext.GetCurrentReader(bookId);
-
-
-            Novel = _AppDbContext.GetNovel(bookId);
-
-            if (Novel != null)
-            {
-                if (Novel.Chapters?.Count > 0)
-                {
-                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                }
-            }
-
+            // Thêm trigger vào style
+            listBoxItemStyle.Triggers.Add(trigger);
         }
 
-        private void ModifySelectedChapter()
+        private void UpdateHightlightFirst()
         {
-            //if (!lstContent.IsFocused)
-            //{
-            //    lstContent.Focus();
-            //}
+            string? currentLine = SelectedChapter?.Content?[_current_reader.CurrentLine];
+            var curPos = string.IsNullOrEmpty(currentLine) ? 0 : _current_reader.CurrentPosition;
+            string selectedText = WpfUtils.GetTextUntilSpace(currentLine ?? "", curPos);
 
-            //lstContent.SelectedIndex = _current_reader.CurrentLine;
-            lstContent.SelectedIndex = _current_reader.CurrentLine;
-            ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
-            lstContent.ScrollIntoView(lstContent.SelectedItem);
-            ContinueSpeech();
-            //UpdateHightlightFirst();
-            _AppDbContext.CurrentReader.Update(_current_reader);
-            _AppDbContext.SaveChanges();
-            ClearRAM();
+
+            HighlightSpeechingSelected(curPos, selectedText);
         }
 
 
@@ -459,8 +467,7 @@ namespace NovelReader
                 }
             }
         }
-
-        #endregion Function Logical
+        #endregion UI Change funtion
 
         #region Event Handler
         private void Window_StateChanged(object sender, EventArgs e)
@@ -697,7 +704,6 @@ namespace NovelReader
 
 
         #endregion Button_Action
-
 
         #region Menu Region
 

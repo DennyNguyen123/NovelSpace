@@ -70,11 +70,11 @@ namespace NovelReader
                 var dataContext = border.DataContext as NovelContent;
                 if (dataContext != null)
                 {
+                    this.Close();
                     MainWindow.AppConfig.CurrentBookId = dataContext.BookId;
                     MainWindow.AppConfig.Save();
-                    MainWindow.LoadNovelData();
-                    MainWindow.UpdateUI();  
-                    this.Close();
+                    MainWindow.LoadNovelData();  
+                    MainWindow.UpdateUI();
                 }
             }
         }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using DataSharedLibrary;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;
@@ -15,12 +16,51 @@ using System.Windows.Media;
 
 namespace NovelReader
 {
+
+
     public static class WpfUtils
     {
+
+        public static void RunTaskWithSplash(this Window windows, Action action, bool isHideManWindows = true)
+        {
+
+            SplashScreenWindow splash = new SplashScreenWindow();
+            splash.Show();
+
+            Task.Run(() =>
+            {
+                action();
+
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    splash.Close(); // Đóng SplashScreen
+
+                    if (isHideManWindows)
+                    {
+                        windows.Show();     // Hiển thị MainWindow
+                    }
+                });
+
+            });
+
+            if (isHideManWindows)
+            {
+                windows.Hide();
+            }
+        }
+
+
+        public static void ClearRAM()
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
         public static Brush ConvertHtmlColorToBrush(string? htmlColor)
         {
             BrushConverter converter = new BrushConverter();
-            return (Brush)converter.ConvertFromString(htmlColor??"#FFFFFF");
+            return (Brush)converter.ConvertFromString(htmlColor ?? "#FFFFFF");
         }
 
         public static string? ColorPicker()
@@ -70,7 +110,7 @@ namespace NovelReader
 
             if (openFileDialog.ShowDialog() == true)
             {
-                string selectedFilePath = openFileDialog.FileName; 
+                string selectedFilePath = openFileDialog.FileName;
                 return selectedFilePath;
             }
             return currentPath;
@@ -104,7 +144,7 @@ namespace NovelReader
         public static T Clone<T>(T obj) where T : class, new()
         {
             var json = JsonSerializer.Serialize(obj);
-            return JsonSerializer.Deserialize<T>(json)??new T();
+            return JsonSerializer.Deserialize<T>(json) ?? new T();
         }
 
         public static bool IsNotNumber(string? input)
