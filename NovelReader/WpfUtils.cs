@@ -21,11 +21,16 @@ namespace NovelReader
     public static class WpfUtils
     {
 
-        public static void RunTaskWithSplash(this Window windows, Action action, bool isHideManWindows = true)
+        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null, bool isHideManWindows = true)
         {
 
             SplashScreenWindow splash = new SplashScreenWindow();
             splash.Show();
+
+            if (isHideManWindows)
+            {
+                windows.Hide();
+            }
 
             Task.Run(() =>
             {
@@ -34,6 +39,7 @@ namespace NovelReader
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     splash.Close(); // Đóng SplashScreen
+                    doneAction();
 
                     if (isHideManWindows)
                     {
@@ -43,10 +49,6 @@ namespace NovelReader
 
             });
 
-            if (isHideManWindows)
-            {
-                windows.Hide();
-            }
         }
 
 

@@ -25,7 +25,8 @@ namespace NovelReader
         public AppConfig AppConfig { get; set; }
 
         private NovelContent _novel;
-        public NovelContent Novel {
+        public NovelContent Novel
+        {
             get { return _novel; }
             set
             {
@@ -68,11 +69,16 @@ namespace NovelReader
 
         public MainWindow()
         {
-            
+
             UpdateUI();
+
+
+
             InitTTS();
-            InitKeyHook(); 
+            InitKeyHook();
             InitTaskBarIcon();
+
+            DataContext = this;
         }
 
         protected override void OnContentRendered(EventArgs e)
@@ -174,63 +180,76 @@ namespace NovelReader
             AppConfig = new AppConfig();
             AppConfig.Get();
 
-            LoadNovelData();
+            this.RunTaskWithSplash(
+                action : LoadNovelData
+                ,doneAction: () => {
 
-            InitializeComponent();
+                    //Fix not selected when start or change book
+                    if (lstContent.Items.Count == 0)
+                    {
+                        lstContent.ItemsSource = SelectedChapter.Content;
+                    }
 
-            DataContext = this;
+                    ModifySelectedChapter(); 
+                
+                });
 
-
-            InitTriggerChangeColor();
-            if (Novel != null)
-            {
-                this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
-                this.Focus();
-                lstContent.Focus();
-                ModifySelectedChapter();
-
-            }
 
             //Hide leftsidebar
-            leftColumn.Width = new GridLength(0);
 
             this.Width = AppConfig.LastWidth;
             this.Height = AppConfig.LastHeigh;
             this.Left = AppConfig.LastLeft;
             this.Top = AppConfig.LastTop;
-            
+            InitializeComponent();
+            leftColumn.Width = new GridLength(0);
 
+            InitTriggerChangeColor();
 
+            if (Novel != null)
+            {
+                this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
+                this.Focus();
+            }
 
 
         }
 
         public void LoadNovelData()
         {
-            this.RunTaskWithSplash(() =>
+            //this.RunTaskWithSplash(() =>
+            //{
+            //SplashScreenWindow splash = new SplashScreenWindow();
+            //splash.Show();
+            //this.Hide();
+
+            var dbPath = AppConfig._sqlitepath;
+            var bookId = AppConfig.CurrentBookId;
+
+
+            var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
+            _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+
+            _current_reader = _AppDbContext.GetCurrentReader(bookId);
+
+
+            Novel = _AppDbContext.GetNovel(bookId);
+
+            if (Novel != null)
             {
-                var dbPath = AppConfig._sqlitepath;
-                var bookId = AppConfig.CurrentBookId;
-
-
-                var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
-                _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
-
-                _current_reader = _AppDbContext.GetCurrentReader(bookId);
-
-
-                Novel = _AppDbContext.GetNovel(bookId);
-
-                if (Novel != null)
+                if (Novel.Chapters?.Count > 0)
                 {
-                    if (Novel.Chapters?.Count > 0)
-                    {
-                        var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                        SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                    }
+                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
+                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
+            }
 
-            });
+            //splash.Close();
+            //this.Show();
+
+
+            //});
+
         }
 
         private void ModifySelectedChapter()

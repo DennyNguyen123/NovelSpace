@@ -35,8 +35,15 @@ namespace NovelReader
 
         public void Save()
         {
-            var json = JsonSerializer.Serialize(this);
-            WpfUtils.ClearAndWriteToFile(_savepath, json);
+            try
+            {
+                var json = JsonSerializer.Serialize(this);
+                WpfUtils.ClearAndWriteToFile(_savepath, json);
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
         public void Get()

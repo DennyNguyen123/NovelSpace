@@ -16,22 +16,11 @@ using System.Windows.Shapes;
 
 namespace NovelReader
 {
-
-    public class FileItem
-    {
-        public string Name { get; set; }
-        public string Type { get; set; } // Ví dụ: File, Folder
-        public string Icon { get; set; } // Đường dẫn đến biểu tượng nếu cần
-    }
-
     /// <summary>
     /// Interaction logic for OpenBookWindow.xaml
     /// </summary>
     public partial class OpenBookWindow : Window, INotifyPropertyChanged
     {
-
-        public List<FileItem> Items { get; set; }
-
         public List<NovelContent> novelContents { get; set; }
 
         public MainWindow MainWindow { get; set; }
@@ -73,7 +62,6 @@ namespace NovelReader
                     this.Close();
                     MainWindow.AppConfig.CurrentBookId = dataContext.BookId;
                     MainWindow.AppConfig.Save();
-                    MainWindow.LoadNovelData();  
                     MainWindow.UpdateUI();
                 }
             }
