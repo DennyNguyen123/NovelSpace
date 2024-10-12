@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace NovelReader
@@ -24,19 +25,28 @@ namespace NovelReader
         public string? TextColor { get; set; } = "#000000";
         public string? CurrentTextColor { get; set; } = "#EBFA03";
         public string? SelectedParagraphColor { get; set; } = "#FA5D03";
-        public double LastWidth { get; set; } = 300;
-        public double LastHeigh { get; set; } = 300;
-        public double LastTop { get; set; } = 300;
-        public double LastLeft { get; set; } = 300;
+        public double? LastWidth { get; set; } = 300;
+        public double? LastHeigh { get; set; } = 300;
+        public double? LastTop { get; set; } = 300;
+        public double? LastLeft { get; set; } = 300;
         public double TextMargin { get; set; } = 30;
         public string _sqlitepath { get => $"{this.FolderTemp}//data.db"; }
 
         private string _savepath = "appconfig.json";
 
+
+        private JsonSerializerOptions jsonOption = new JsonSerializerOptions
+        {
+            NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
+            WriteIndented = true // Tùy chọn cho đẹp mã JSON
+        };
+
         public void Save()
         {
             try
             {
+
+
                 var json = JsonSerializer.Serialize(this);
                 WpfUtils.ClearAndWriteToFile(_savepath, json);
             }

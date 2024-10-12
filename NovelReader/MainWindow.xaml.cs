@@ -184,10 +184,13 @@ namespace NovelReader
                 action : LoadNovelData
                 ,doneAction: () => {
 
-                    //Fix not selected when start or change book
-                    if (lstContent.Items.Count == 0)
+                    if (Novel != null)
                     {
-                        lstContent.ItemsSource = SelectedChapter.Content;
+                        if (Novel.Chapters?.Count > 0)
+                        {
+                            var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
+                            SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                        }
                     }
 
                     ModifySelectedChapter(); 
@@ -197,10 +200,11 @@ namespace NovelReader
 
             //Hide leftsidebar
 
-            this.Width = AppConfig.LastWidth;
-            this.Height = AppConfig.LastHeigh;
-            this.Left = AppConfig.LastLeft;
-            this.Top = AppConfig.LastTop;
+            if(AppConfig.LastWidth != null) this.Width = AppConfig.LastWidth.Value;
+            if (AppConfig.LastHeigh != null) this.Height = AppConfig.LastHeigh.Value;
+            if (AppConfig.LastLeft != null) this.Left = AppConfig.LastLeft.Value;
+            if (AppConfig.LastTop != null) this.Top = AppConfig.LastTop.Value;
+
             InitializeComponent();
             leftColumn.Width = new GridLength(0);
 
@@ -235,14 +239,14 @@ namespace NovelReader
 
             Novel = _AppDbContext.GetNovel(bookId);
 
-            if (Novel != null)
-            {
-                if (Novel.Chapters?.Count > 0)
-                {
-                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                }
-            }
+            //if (Novel != null)
+            //{
+            //    if (Novel.Chapters?.Count > 0)
+            //    {
+            //        var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
+            //        SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+            //    }
+            //}
 
             //splash.Close();
             //this.Show();
