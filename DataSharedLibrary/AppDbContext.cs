@@ -55,9 +55,11 @@ namespace DataSharedLibrary
 
         public NovelContent? GetNovel(string? bookId)
         {
-            var novel = this.NovelContents.AsNoTracking().Where(x => x.BookId == bookId).FirstOrDefault().Clone();
+            var novel = this.NovelContents.AsNoTracking().Where(x => x.BookId == bookId).FirstOrDefault();
+
             if (novel != null)
             {
+                novel.BookName = $"{novel.BookName} - {novel.Author}";
                 var lstChapter = this.ChapterContents.AsNoTracking().Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToList();
                 if (lstChapter?.Count() > 0)
                 {

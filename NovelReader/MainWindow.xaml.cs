@@ -22,7 +22,17 @@ namespace NovelReader
     {
         #region Property
         public SpeechSynthesizer speechSynthesizer;
-        public AppConfig AppConfig { get; set; }
+
+        private AppConfig _appConfig;
+        public AppConfig AppConfig
+        {
+            get { return _appConfig; }
+            set
+            {
+                _appConfig = value;
+                OnPropertyChanged(nameof(AppConfig));
+            }
+        }
 
         private NovelContent _novel;
         public NovelContent Novel
@@ -70,19 +80,31 @@ namespace NovelReader
         public MainWindow()
         {
 
-            UpdateUI();
+            AppConfig = new AppConfig();
+            AppConfig.Get();
+            LoadNovelData();
 
+            //Hide leftsidebar
 
+            InitializeComponent();
+            if ((AppConfig.LastWidth ?? 0) >= 0) this.Width = AppConfig.LastWidth.Value;
+            if ((AppConfig.LastHeigh ?? 0) >= 0) this.Height = AppConfig.LastHeigh.Value;
+            if ((AppConfig.LastLeft ?? 0) >= 0) this.Left = AppConfig.LastLeft.Value;
+            if ((AppConfig.LastTop ?? 0) >= 0) this.Top = AppConfig.LastTop.Value;
 
             InitTTS();
             InitKeyHook();
             InitTaskBarIcon();
+
+            leftColumn.Width = new GridLength(0);
 
             DataContext = this;
         }
 
         protected override void OnContentRendered(EventArgs e)
         {
+
+            UpdateUI();
             base.OnContentRendered(e);
         }
 
@@ -175,87 +197,50 @@ namespace NovelReader
 
         #region Function Logical
 
+
         public void UpdateUI()
         {
-            AppConfig = new AppConfig();
-            AppConfig.Get();
-
-            this.RunTaskWithSplash(
-                action : LoadNovelData
-                ,doneAction: () => {
-
-                    if (Novel != null)
-                    {
-                        if (Novel.Chapters?.Count > 0)
-                        {
-                            var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                            SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                            this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
-                        }
-                    }
-
-                    ModifySelectedChapter(); 
-                
-                });
-
-
-            //Hide leftsidebar
-
-            if(AppConfig.LastWidth != null) this.Width = AppConfig.LastWidth.Value;
-            if (AppConfig.LastHeigh != null) this.Height = AppConfig.LastHeigh.Value;
-            if (AppConfig.LastLeft != null) this.Left = AppConfig.LastLeft.Value;
-            if (AppConfig.LastTop != null) this.Top = AppConfig.LastTop.Value;
-
-            InitializeComponent();
-            leftColumn.Width = new GridLength(0);
-
             InitTriggerChangeColor();
 
-            //if (Novel != null)
-            //{
-            //    this.Title = $"{this.Novel.BookName} - {this.Novel.Author}";
-            //    this.Focus();
-            //}
-
-
+            OnPropertyChanged("");
         }
 
         public void LoadNovelData()
         {
-            //this.RunTaskWithSplash(() =>
-            //{
-            //SplashScreenWindow splash = new SplashScreenWindow();
-            //splash.Show();
-            //this.Hide();
+            this.RunTaskWithSplash(
+            action: () =>
+            {
 
-            var dbPath = AppConfig._sqlitepath;
-            var bookId = AppConfig.CurrentBookId;
+                var dbPath = AppConfig._sqlitepath;
+                var bookId = AppConfig.CurrentBookId;
 
 
-            var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
-            _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+                var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
+                _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
 
-            _current_reader = _AppDbContext.GetCurrentReader(bookId);
-
-
-            Novel = _AppDbContext.GetNovel(bookId);
-
-            //if (Novel != null)
-            //{
-            //    if (Novel.Chapters?.Count > 0)
-            //    {
-            //        var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-            //        SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-            //    }
-            //}
-
-            //splash.Close();
-            //this.Show();
+                _current_reader = _AppDbContext.GetCurrentReader(bookId);
 
 
-            //});
+                this.Novel = _AppDbContext.GetNovel(bookId);
+            }
+            , doneAction: () =>
+            {
+
+                if (Novel != null)
+                {
+                    if (Novel.Chapters?.Count > 0)
+                    {
+                        var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
+                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                        ModifySelectedChapter();
+                    }
+                }
+
+            });
 
         }
+
+
 
         private void ModifySelectedChapter()
         {

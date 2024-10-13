@@ -25,33 +25,29 @@ namespace NovelReader
         {
 
             SplashScreenWindow splash = new SplashScreenWindow();
-            // Hiển thị SplashScreen trên UI thread
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                splash.Show();
-            });
+            splash.Show();
 
             if (isHideManWindows)
             {
                 windows.Hide();
             }
-           
-                Task.Run(() =>
+
+            Task.Run(() =>
+        {
+            action();
+
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
-                action();
-
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                doneAction?.Invoke();
+                splash.Close(); // Đóng SplashScreen
+                if (isHideManWindows)
                 {
-                    doneAction?.Invoke();
-                    splash.Close(); // Đóng SplashScreen
-                    if (isHideManWindows)
-                    {
-                        windows.Show();     // Hiển thị MainWindow
-                    }
-
-                });
+                    windows.Show();     // Hiển thị MainWindow
+                }
 
             });
+
+        });
         }
 
 

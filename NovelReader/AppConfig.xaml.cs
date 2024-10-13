@@ -75,9 +75,9 @@ namespace NovelReader
 
                 MainWindow.speechSynthesizer.Rate = MainWindow.AppConfig.VoiceRate;
                 MainWindow.speechSynthesizer.Volume = MainWindow.AppConfig.VoiceVolumn;
-                MainWindow.UpdateUI();
-                MessageBox.Show("Save successfully");
+                //MessageBox.Show("Save successfully");
                 this.Close();
+                MainWindow.UpdateUI();
 
             }
             catch (Exception ex)
