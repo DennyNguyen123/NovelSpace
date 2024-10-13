@@ -21,7 +21,10 @@ namespace NovelReader
     {
         public SplashScreenWindow()
         {
+            
+
             InitializeComponent();
+
         }
     }
 }

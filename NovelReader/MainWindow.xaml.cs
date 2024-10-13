@@ -205,6 +205,35 @@ namespace NovelReader
             OnPropertyChanged("");
         }
 
+        private void LoadChapterContent()
+        {
+
+            this.RunTaskWithSplash(() =>
+            {
+                if (Novel != null)
+                {
+                    if (Novel.Chapters?.Count > 0)
+                    {
+                        //remove pre
+                        if (_current_reader.CurrentChapter > 0) this.Novel.Chapters[_current_reader.CurrentChapter - 1].Content = null;
+
+                        var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
+                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                        ModifySelectedChapter();
+                    }
+                }
+            }
+            , doneAction: () =>
+            {
+            }
+            , false
+            , false
+            , AppConfig.TextColor
+            , AppConfig.BackgroundColor
+            );
+
+        }
+
         public void LoadNovelData()
         {
             this.RunTaskWithSplash(
@@ -225,18 +254,13 @@ namespace NovelReader
             }
             , doneAction: () =>
             {
+                LoadChapterContent();
 
-                if (Novel != null)
-                {
-                    if (Novel.Chapters?.Count > 0)
-                    {
-                        var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                        ModifySelectedChapter();
-                    }
-                }
-
-            });
+            }
+            ,textColor : AppConfig.TextColor
+            ,backgroudColor : AppConfig.BackgroundColor
+            )
+            ;
 
         }
 
@@ -246,6 +270,12 @@ namespace NovelReader
         {
             try
             {
+
+                if (lstContent.Items.Count <= 0)
+                {
+                    this.SelectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
+                }
+
                 lstContent.SelectedIndex = _current_reader.CurrentLine;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
@@ -264,9 +294,11 @@ namespace NovelReader
         public void MoveNextLine()
         {
 
+            _current_reader.CurrentPosition = 0;
             if (_current_reader.CurrentLine < SelectedChapter?.Content?.Count - 1)
             {
                 _current_reader.CurrentLine += 1;
+                ModifySelectedChapter();
             }
             else
             {
@@ -274,23 +306,20 @@ namespace NovelReader
                 {
                     _current_reader.CurrentLine = 0;
                     _current_reader.CurrentChapter += 1;
-                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+
                 }
                 else//Move to first
                 {
                     _current_reader.CurrentLine = 0;
                     _current_reader.CurrentChapter = 0;
-                    var selectedChapter = Novel.Chapters[_current_reader.CurrentChapter];
-                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
                 }
+
+                LoadChapterContent();
             }
 
             //ContinueSpeech();
 
-            _current_reader.CurrentPosition = 0;
 
-            ModifySelectedChapter();
         }
 
         private void MoveNextChap()
@@ -299,43 +328,44 @@ namespace NovelReader
             var newIndex = currentIndex + 1;
             if (newIndex.HasValue & newIndex <= Novel?.Chapters?.Count())
             {
-                var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
-                SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
                 _current_reader.CurrentChapter = newIndex.Value;
                 _current_reader.CurrentLine = 0;
                 _current_reader.CurrentPosition = 0;
-                ModifySelectedChapter();
+
+                //var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
+                //SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                //ModifySelectedChapter();
+                LoadChapterContent();
             }
         }
 
         private void MovePrevLine()
         {
 
+            _current_reader.CurrentPosition = 0;
             if (_current_reader.CurrentLine > 0)
             {
                 _current_reader.CurrentLine -= 1;
+                ModifySelectedChapter();
             }
             else
             {
                 if (_current_reader.CurrentChapter > 0)
                 {
                     _current_reader.CurrentChapter -= 1;
-                    var selectedChapter = Novel?.Chapters?[_current_reader.CurrentChapter] ?? new ChapterContent();
-                    SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
                     var curLine = (SelectedChapter?.Content?.Count ?? 1) - 1;
                     _current_reader.CurrentLine = curLine;
+
+
+                    //var selectedChapter = Novel?.Chapters?[_current_reader.CurrentChapter] ?? new ChapterContent();
+                    //SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                    LoadChapterContent();
                 }
             }
 
 
-
-            //ContinueSpeech();
-
-            _current_reader.CurrentPosition = 0;
-
-            ModifySelectedChapter();
         }
 
         private void MovePrevChap()
@@ -344,13 +374,15 @@ namespace NovelReader
             var newIndex = currentIndex - 1;
             if (newIndex.HasValue & newIndex >= 0)
             {
-                var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
-                SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
 
                 _current_reader.CurrentChapter = newIndex.Value;
                 _current_reader.CurrentLine = 0;
                 _current_reader.CurrentPosition = 0;
-                ModifySelectedChapter();
+
+                //var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
+                //SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                //ModifySelectedChapter();
+                LoadChapterContent();
             }
         }
         #endregion Function Logical
@@ -558,11 +590,13 @@ namespace NovelReader
             {
                 if (listView.IsMouseCaptured)
                 {
-                    SelectedChapter = _AppDbContext.GetContentChapter(chapter);
-                    _current_reader.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
                     _current_reader.CurrentLine = 0;
                     _current_reader.CurrentPosition = 0;
-                    ModifySelectedChapter();
+
+                    //SelectedChapter = _AppDbContext.GetContentChapter(chapter);
+                    //_current_reader.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
+                    //ModifySelectedChapter();
+                    LoadChapterContent();
                 }
             }
         }

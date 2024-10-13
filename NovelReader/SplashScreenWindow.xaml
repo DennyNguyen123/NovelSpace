@@ -12,7 +12,7 @@
         ShowInTaskbar="False"
         Height="200" Width="400"
         >
-    <Grid Background="White">
+    <Grid Background="Transparent">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock x:Name="txtStatus" Text="Loading, please wait..." FontSize="24"/>
             <ProgressBar x:Name="progressBar" Width="200" Height="20" IsIndeterminate="True"/>

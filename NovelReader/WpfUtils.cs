@@ -21,10 +21,14 @@ namespace NovelReader
     public static class WpfUtils
     {
 
-        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null, bool isHideManWindows = true)
+        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null, bool isHideManWindows = true, bool isRunAsync = true, string? textColor = null, string? backgroudColor = null)
         {
 
             SplashScreenWindow splash = new SplashScreenWindow();
+
+            splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
+            splash.Background = ConvertHtmlColorToBrush(backgroudColor);
+            SetPositionCenterParent(splash, windows);
             splash.Show();
 
             if (isHideManWindows)
@@ -32,22 +36,32 @@ namespace NovelReader
                 windows.Hide();
             }
 
-            Task.Run(() =>
-        {
-            action();
-
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            var task = new Task(() =>
             {
-                doneAction?.Invoke();
-                splash.Close(); // Đóng SplashScreen
-                if (isHideManWindows)
+                action();
+
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    windows.Show();     // Hiển thị MainWindow
-                }
+                    doneAction?.Invoke();
+                    splash.Close(); // Đóng SplashScreen
+                    if (isHideManWindows)
+                    {
+                        windows.Show();     // Hiển thị MainWindow
+                    }
+
+                });
 
             });
 
-        });
+
+            if (isRunAsync)
+            {
+                task.Start();
+            }
+            else
+            {
+                task.RunSynchronously();
+            }
         }
 
 
