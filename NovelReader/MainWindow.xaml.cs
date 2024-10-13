@@ -730,6 +730,22 @@ namespace NovelReader
             }
         }
 
+        private void ToggleTopMost(object sender, RoutedEventArgs e)
+        {
+            this.Topmost = !this.Topmost;
+
+            if (this.Topmost == true)
+            {
+                toggleTopmostIco.Icon = FontAwesome.WPF.FontAwesomeIcon.CheckSquareOutline;
+            }
+            else
+            {
+                toggleTopmostIco.Icon = FontAwesome.WPF.FontAwesomeIcon.SquareOutline;
+            }
+            e.Handled = true;
+        }
+
+
         private void OpenBook_Click(object sender, RoutedEventArgs e)
         {
             OpenBookWindow openBookWindow = new OpenBookWindow();
@@ -754,8 +770,6 @@ namespace NovelReader
             }
 
         }
-
-
 
         #endregion Menu Region
 
