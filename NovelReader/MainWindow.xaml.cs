@@ -215,7 +215,9 @@ namespace NovelReader
                     if (Novel.Chapters?.Count > 0)
                     {
                         //remove pre
-                        if (_current_reader.CurrentChapter > 0) this.Novel.Chapters[_current_reader.CurrentChapter - 1].Content = null;
+                        //if (_current_reader.CurrentChapter > 0) this.Novel.Chapters[_current_reader.CurrentChapter - 1].Content = null;
+
+                        this.Novel.Chapters.Where(x => x.Content?.Count > 0).ToList().ForEach(r => { r.Content = null; });
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                         this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
@@ -257,8 +259,8 @@ namespace NovelReader
                 LoadChapterContent();
 
             }
-            ,textColor : AppConfig.TextColor
-            ,backgroudColor : AppConfig.BackgroundColor
+            , textColor: AppConfig.TextColor
+            , backgroudColor: AppConfig.BackgroundColor
             )
             ;
 
@@ -592,7 +594,7 @@ namespace NovelReader
                 {
                     _current_reader.CurrentLine = 0;
                     _current_reader.CurrentPosition = 0;
-
+                    _current_reader.CurrentChapter = Novel.Chapters.IndexOf(chapter);
                     //SelectedChapter = _AppDbContext.GetContentChapter(chapter);
                     //_current_reader.CurrentChapter = Novel?.Chapters?.IndexOf(chapter) ?? 0;
                     //ModifySelectedChapter();
