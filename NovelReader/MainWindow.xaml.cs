@@ -205,7 +205,7 @@ namespace NovelReader
             OnPropertyChanged("");
         }
 
-        private void LoadChapterContent()
+        private void LoadChapterContent(bool selectedLastItem = false)
         {
 
             this.RunTaskWithSplash(() =>
@@ -221,6 +221,16 @@ namespace NovelReader
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                         this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+
+                        if (selectedLastItem)
+                        {
+                            _current_reader.CurrentLine = selectedChapter.Content.Count - 1;
+                        }
+                        else
+                        {
+                            _current_reader.CurrentLine = 0;
+                        }
+
                         ModifySelectedChapter();
                     }
                 }
@@ -357,13 +367,9 @@ namespace NovelReader
                 {
                     _current_reader.CurrentChapter -= 1;
 
-                    var curLine = (SelectedChapter?.Content?.Count ?? 1) - 1;
-                    _current_reader.CurrentLine = curLine;
-
-
                     //var selectedChapter = Novel?.Chapters?[_current_reader.CurrentChapter] ?? new ChapterContent();
                     //SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                    LoadChapterContent();
+                    LoadChapterContent(true);
                 }
             }
 
