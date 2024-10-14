@@ -14,7 +14,7 @@ namespace DataSharedLibrary
         {
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             // Thiết lập đường dẫn đến cơ sở dữ liệu ở đây
-            var dbPath = "C:/path/to/your/database.db"; // Đường dẫn bạn muốn
+            var dbPath = "D:\\Truyen\\SQLite\\data.db"; // Đường dẫn bạn muốn
 
             optionsBuilder.UseSqlite($"Data Source={dbPath}");
 

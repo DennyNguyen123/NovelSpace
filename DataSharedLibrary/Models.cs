@@ -26,14 +26,18 @@ namespace DataSharedLibrary
     public class NovelContent
     {
         [Key]
-        public string? BookId { get; set; }
+        public string? BookId { get; set; }  // Khóa chính
+
         public string? Title { get; set; }
         public string? ImageBase64 { get; set; }
         public string? BookName { get; set; }
         public string? Author { get; set; }
         public string? URL { get; set; }
         public int? MaxChapterCount { get; set; }
+
+        // Mối quan hệ một-nhiều với ChapterContent
         public List<ChapterContent>? Chapters { get; set; }
+
         public NovelContent()
         {
             Chapters = new List<ChapterContent>();
@@ -42,37 +46,46 @@ namespace DataSharedLibrary
 
     public class ChapterContent
     {
-        [ForeignKey(nameof(NovelContent))] // Chỉ định khóa phụ
+        [Key] // Khóa chính
+        public string? ChapterId { get; set; }
+
+        [ForeignKey(nameof(NovelContent))] // Khóa phụ tham chiếu đến NovelContent
         public string? BookId { get; set; }
 
         public int? IndexChapter { get; set; }
-
-        [Key]
-        public string? ChapterId { get; set; }
         public string? Title { get; set; }
         public string? URL { get; set; }
         public List<string?>? Content { get; set; }
+
+        // Mối quan hệ nhiều-một với NovelContent
+        public NovelContent? NovelContent { get; set; }
+
+        // Điều hướng tới ChapterDetailContent
+        public ICollection<ChapterDetailContent>? ChapterDetailContents { get; set; }
+
         public ChapterContent()
         {
             this.Content = new List<string?>();
         }
-
     }
 
     public class ChapterDetailContent
     {
         [Key]
-        public string? Id { get; set; }
+        public string? Id { get; set; }  // Khóa chính
 
         public int? Index { get; set; }
 
-        [ForeignKey(nameof(NovelContent))]
+        [ForeignKey(nameof(NovelContent))] // Khóa phụ tham chiếu đến NovelContent
         public string? BookId { get; set; }
 
-        [ForeignKey(nameof(ChapterContent))]
+        [ForeignKey(nameof(ChapterContent))] // Khóa phụ tham chiếu đến ChapterContent
         public string? ChapterId { get; set; }
 
         public string? Content { get; set; }
+
+        // Điều hướng tới ChapterContent
+        public ChapterContent? ChapterContent { get; set; }
     }
 
 
