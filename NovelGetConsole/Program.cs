@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using DataSharedLibrary;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
 
 namespace GetTruyen
@@ -113,7 +114,7 @@ namespace GetTruyen
 
                         case "6":
                             Console.Write("Nhập url: ");
-                            string epubUrl = Console.ReadLine()??"";
+                            string epubUrl = Console.ReadLine() ?? "";
                             Console.Write("Check valid json? (Y,N) (Default N)");
                             string? inIsCheck = Console.ReadLine();
                             bool isCheck = inIsCheck == "Y" ? true : false;
@@ -131,7 +132,7 @@ namespace GetTruyen
                             await getTruyen.ConvertToSqlite(sqliteUrl, isCheck1);
                             Pause();
                             break;
-                        
+
                         case "8":
                             await getTruyen.ConvertToNovelFile(GetParam());
                             Pause();
@@ -155,7 +156,22 @@ namespace GetTruyen
 
         public static async Task Main(string[] args)
         {
-            await MenuCommand();
+            //await MenuCommand();
+
+            var getTruyen = new GetTruyen();
+            Console.WriteLine("Loading...");
+            var isLoad = await getTruyen.FirstLoad();
+
+            if (isLoad ?? false == true)
+            {
+                await getTruyen.FixAndImport();
+            }
+
+            Console.WriteLine("Done");
+
+
+            Console.ReadKey();
+
         }
     }
 }

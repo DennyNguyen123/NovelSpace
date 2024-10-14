@@ -12,6 +12,7 @@ using DataSharedLibrary;
 using Flurl;
 using Flurl.Http;
 using GetTruyen;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
 using QuickEPUB;
 
@@ -873,6 +874,8 @@ namespace GetTruyen
         public async Task FixAndImport()
         {
             using var appDbContext = new AppDbContext("D:\\Truyen\\SQLite\\data.db", new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>());
+
+            await appDbContext.Database.MigrateAsync();
 
             string? folderPath = "D:\\Truyen\\JSON\\docfull.org";
 
