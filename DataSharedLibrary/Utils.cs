@@ -56,9 +56,9 @@ namespace DataSharedLibrary
         {
             try
             {
-                var fileByte = File.ReadAllBytes(filePath);
+                var fileByte = File.ReadAllText(filePath);
 
-                var text = DecompressZstd(fileByte);
+                var text = GZipDecompressText(fileByte);
 
                 return JsonSerializer.Deserialize<T?>(text);
             }
