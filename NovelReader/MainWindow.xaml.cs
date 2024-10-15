@@ -364,8 +364,8 @@ namespace NovelReader
             {
                 _current_reader.CurrentChapter = newIndex.Value;
                 _current_reader.CurrentLine = 0;
-                _current_reader.CurrentPosition = 0;
-
+                _current_reader.CurrentPosition = 0; 
+                LoadChapterContent();
             }
             else
             {
