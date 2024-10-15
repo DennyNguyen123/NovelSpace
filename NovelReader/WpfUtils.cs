@@ -12,7 +12,9 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Interop;
 using System.Windows.Media;
+using MessageBox = System.Windows.MessageBox;
 
 namespace NovelReader
 {
@@ -42,8 +44,8 @@ namespace NovelReader
 
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    doneAction?.Invoke();
                     splash.Close(); // Đóng SplashScreen
+                    doneAction?.Invoke();
                     if (isHideManWindows)
                     {
                         windows.Show();     // Hiển thị MainWindow
@@ -64,6 +66,33 @@ namespace NovelReader
             }
         }
 
+
+        public static void ShowError(this Window window, string msg)
+        {
+            MessageBox.Show(messageBoxText: msg, "Error", MessageBoxButton.OK, (MessageBoxImage)MessageBoxIcon.Error);
+        }
+
+        public static void ShowYesNoMessageBox(
+            this Window window,
+            string msg,
+            string title,
+            Action? yesAction = null,
+            Action? noAction = null
+            )
+        {
+            // Hiển thị MessageBox với Yes và No
+            MessageBoxResult result = MessageBox.Show(msg, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            // Xử lý kết quả người dùng chọn Yes hoặc No
+            if (result == MessageBoxResult.Yes)
+            {
+                yesAction?.Invoke();
+            }
+            else if (result == MessageBoxResult.No)
+            {
+                noAction?.Invoke();
+            }
+        }
 
         public static void ClearRAM()
         {

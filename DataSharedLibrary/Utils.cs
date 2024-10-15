@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
@@ -11,6 +12,32 @@ namespace DataSharedLibrary
 
     public static class Utils
     {
+
+        public static string CompressText(string text)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(text);
+            using (var compressedStream = new MemoryStream())
+            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Compress))
+            {
+                gzipStream.Write(data, 0, data.Length);
+                gzipStream.Close();
+                return Convert.ToBase64String(compressedStream.ToArray());
+            }
+        }
+
+        public static string DecompressText(string compressedText)
+        {
+            byte[] compressedData = Convert.FromBase64String(compressedText);
+            using (var compressedStream = new MemoryStream(compressedData))
+            using (var gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress))
+            using (var resultStream = new MemoryStream())
+            {
+                gzipStream.CopyTo(resultStream);
+                return Encoding.UTF8.GetString(resultStream.ToArray());
+            }
+        }
+
+
         public static bool IsNotNumber(string? input)
         {
             // Biểu thức chính quy để kiểm tra chuỗi chỉ chứa số (cả số nguyên và số thực)

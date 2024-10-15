@@ -56,12 +56,12 @@ namespace GetTruyen
         protected IPlaywright? _playwright;
         protected IBrowser _browser;
         protected IBrowserContext _browserContext;
+        protected PageGotoOptions _pageGotoOption;
 
         protected bool isLogin = false;
 
         public AppConfig _config;
         protected string _config_path = "appconf.json";
-        protected PageGotoOptions _pageGotoOption;
 
 
         public GetTruyen()

@@ -2,10 +2,12 @@
 using System.ComponentModel.Design;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using DataSharedLibrary;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
+using NovelGetConsole;
 
 namespace GetTruyen
 {
@@ -154,18 +156,26 @@ namespace GetTruyen
             //await getTruyen.CheckJson("thanh-khu-dich-full.json");
         }
 
+
+
         public static async Task Main(string[] args)
         {
             //await MenuCommand();
 
-            var getTruyen = new GetTruyen();
-            Console.WriteLine("Loading...");
-            var isLoad = await getTruyen.FirstLoad();
+            //var getTruyen = new GetTruyen();
+            //Console.WriteLine("Loading...");
+            //var isLoad = await getTruyen.FirstLoad();
 
-            if (isLoad ?? false == true)
-            {
-                await getTruyen.FixAndImport();
-            }
+            //if (isLoad ?? false == true)
+            //{
+            //    await getTruyen.FixAndImport();
+            //}
+
+
+
+            var test = new Test();
+            await test.TestReadEpub();
+
 
             Console.WriteLine("Done");
 

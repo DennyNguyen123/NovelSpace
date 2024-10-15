@@ -94,9 +94,10 @@
         <Grid Grid.Row="1" x:Name="contentGrid">
             <Grid.ColumnDefinitions>
                 <!-- Column 1: 30% width -->
-                <ColumnDefinition Width="5*" x:Name="leftColumn"/>
+                <ColumnDefinition Width="3*" x:Name="leftColumn"/>
+                <ColumnDefinition Width="5"  x:Name="gridSplitter"/>
                 <!-- Column 2: 70% width -->
-                <ColumnDefinition Width="5*"/>
+                <ColumnDefinition Width="7*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Content for the first column (left) -->
@@ -124,9 +125,9 @@
                     </ListView>
                 </DockPanel>
             </Grid>
-
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
             <!-- Content for the second column (right) -->
-            <DockPanel Grid.Column="1">
+            <DockPanel Grid.Column="2">
 
                 <Grid>
                     <Grid.RowDefinitions>

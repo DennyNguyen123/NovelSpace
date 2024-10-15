@@ -84,7 +84,6 @@ namespace NovelReader
             AppConfig.Get();
             LoadNovelData();
 
-            //Hide leftsidebar
 
             InitializeComponent();
             if ((AppConfig.LastWidth ?? 0) >= 0) this.Width = AppConfig.LastWidth.Value;
@@ -96,7 +95,8 @@ namespace NovelReader
             InitKeyHook();
             InitTaskBarIcon();
 
-            leftColumn.Width = new GridLength(0);
+            //Hide leftsidebar
+            ToggleTOC_Click(null, null);
 
             DataContext = this;
         }
@@ -220,7 +220,7 @@ namespace NovelReader
                         this.Novel.Chapters.Where(x => x.Content?.Count > 0).ToList().ForEach(r => { r.Content = null; });
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
+                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter).GetAwaiter().GetResult();
 
                         if (selectedLastItem)
                         {
@@ -238,10 +238,10 @@ namespace NovelReader
             , doneAction: () =>
             {
             }
-            , false
-            , false
-            , AppConfig.TextColor
-            , AppConfig.BackgroundColor
+            , isHideManWindows: false
+            , isRunAsync: false
+            , textColor: AppConfig.TextColor
+            , backgroudColor: AppConfig.BackgroundColor
             );
 
         }
@@ -255,14 +255,16 @@ namespace NovelReader
                 var dbPath = AppConfig._sqlitepath;
                 var bookId = AppConfig.CurrentBookId;
 
+                if (_AppDbContext == null)
+                {
+                    var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
+                    _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
+                }
 
-                var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
-                _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
-
-                _current_reader = _AppDbContext.GetCurrentReader(bookId);
+                _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
 
 
-                this.Novel = _AppDbContext.GetNovel(bookId);
+                this.Novel = _AppDbContext.GetNovel(bookId).GetAwaiter().GetResult();
             }
             , doneAction: () =>
             {
@@ -764,11 +766,13 @@ namespace NovelReader
             if (leftColumn.Width != new GridLength(0))
             {
                 leftColumn.Width = new GridLength(0); // Hide the column by setting its width to 0
+                gridSplitter.Width = new GridLength(0);
                 lstContent.Focus();
             }
             else
             {
-                leftColumn.Width = new GridLength(5, GridUnitType.Star); // Show the column by restoring its width to 30%
+                leftColumn.Width = new GridLength(3, GridUnitType.Star); // Show the column by restoring its width to 30%
+                gridSplitter.Width = new GridLength(5);
             }
         }
 
@@ -790,24 +794,81 @@ namespace NovelReader
 
         private void OpenBook_Click(object sender, RoutedEventArgs e)
         {
-            OpenBookWindow openBookWindow = new OpenBookWindow();
+            BookLibraryWindow openBookWindow = new BookLibraryWindow();
             openBookWindow.Owner = this;
             openBookWindow.ShowDialog();
+        }
+
+        private void ImportActionBef(string? bookId, string? msg)
+        {
+            if (!string.IsNullOrWhiteSpace(msg) & string.IsNullOrWhiteSpace(bookId))
+            {
+                this.ShowError(msg);
+            }
+            else
+            {
+                string existMsg = "Already exist - ";
+                this.ShowYesNoMessageBox($"{existMsg}Do you want open this book", "Open Book?",
+
+                    yesAction: () =>
+                    {
+                        AppConfig.CurrentBookId = bookId;
+                        AppConfig.Save();
+                        LoadNovelData();
+                        UpdateUI();
+                    }
+
+                );
+
+            }
         }
 
 
         private void ImportBook_Click(object sender, RoutedEventArgs e)
         {
-            var filename = WpfUtils.GetFilePath(null, "Novel files (*.novel)|*.novel|EPUB files (*.epub)|*.epub");
+            var filename = WpfUtils.GetFilePath(null, "EPUB files (*.epub)|*.epub|Novel files (*.novel)|*.novel");
+            string? bookId = null;
+            string? msg = null;
+            bool isDone = false;
+            DateTime startDate = DateTime.Now;
+            int timeOut = 120000;
+
             if (!string.IsNullOrEmpty(filename))
             {
                 var ext = Path.GetExtension(filename);
                 if (ext == ".novel")
                 {
-                    Task.Run(async () => { await _AppDbContext.ImportBookByJsonModel(filename); });
+                    this.RunTaskWithSplash(
+                        () =>
+                        {
+                            bookId = _AppDbContext.ImportBookByJsonModel(filename).GetAwaiter().GetResult();
+                        }
+                        , doneAction: () =>
+                        {
+                            isDone = true;
+                        }
+                        , textColor: AppConfig.TextColor
+                        , backgroudColor: AppConfig.BackgroundColor
+                        , isRunAsync: true
+                        );
 
                 }
+                else if (ext == ".epub")
+                {
+                    this.RunTaskWithSplash(action: () =>
+                    {
+                        (bookId, msg) = _AppDbContext.ImportEpub(filename).GetAwaiter().GetResult();
+                    }
+                    , doneAction: () =>
+                    {
+                        ImportActionBef(bookId, msg);
+                    }
+                    , textColor: AppConfig.TextColor
+                    , backgroudColor: AppConfig.BackgroundColor
+                    , isRunAsync: true
+                    );
 
+                }
 
             }
 

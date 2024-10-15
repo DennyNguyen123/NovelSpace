@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HtmlAgilityPack;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using System;
 using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -35,9 +37,9 @@ namespace DataSharedLibrary
         public DbSet<CurrentReader> CurrentReader { get; set; }
 
 
-        public CurrentReader GetCurrentReader(string bookId)
+        public async Task<CurrentReader> GetCurrentReader(string bookId)
         {
-            var cur = this.CurrentReader.Where(x => x.BookId == bookId).FirstOrDefault();
+            var cur = await this.CurrentReader.Where(x => x.BookId == bookId).FirstOrDefaultAsync();
             if (cur == null)
             {
                 cur = new CurrentReader();
@@ -46,21 +48,21 @@ namespace DataSharedLibrary
                 cur.CurrentLine = 0;
                 cur.CurrentPosition = 0;
                 this.CurrentReader.Add(cur);
-                this.SaveChanges();
+                await this.SaveChangesAsync();
             }
             return cur;
 
         }
 
 
-        public NovelContent? GetNovel(string? bookId)
+        public async Task<NovelContent?> GetNovel(string? bookId)
         {
-            var novel = this.NovelContents.AsNoTracking().Where(x => x.BookId == bookId).FirstOrDefault();
+            var novel = await this.NovelContents.AsNoTracking().Where(x => x.BookId == bookId).FirstOrDefaultAsync();
 
             if (novel != null)
             {
                 novel.BookName = $"{novel.BookName} - {novel.Author}";
-                var lstChapter = this.ChapterContents.AsNoTracking().Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToList();
+                var lstChapter = await this.ChapterContents.AsNoTracking().Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToListAsync();
                 if (lstChapter?.Count() > 0)
                 {
                     lstChapter.ForEach(x =>
@@ -76,16 +78,24 @@ namespace DataSharedLibrary
             return novel;
         }
 
-        public ChapterContent GetContentChapter(ChapterContent chapter)
+        public async Task<ChapterContent> GetContentChapter(ChapterContent chapter)
         {
-            var content = this.ChapterDetailContents.AsNoTracking().Where(x => !string.IsNullOrWhiteSpace(x.Content) & x.BookId == chapter.BookId & x.ChapterId == chapter.ChapterId).OrderBy(x => x.Index).Select(r => r.Content).ToList();
+            //await Task.Delay(5000);
+            var content = await this.ChapterDetailContents.AsNoTracking()
+                .Where(x =>
+                !string.IsNullOrWhiteSpace(x.Content)
+                & x.BookId == chapter.BookId
+                & x.ChapterId == chapter.ChapterId)
+                .OrderBy(x => x.Index)
+                .Select(r => r.Content)
+                .ToListAsync();
 
             chapter.Content = content?.Where(x => !x.IsHtml()).ToList();
             return chapter;
         }
 
 
-        public async Task ImportBookByJsonModel(string filename)
+        public async Task<string?> ImportBookByJsonModel(string filename)
         {
             IDbContextTransaction? transaction = null;
             try
@@ -137,6 +147,7 @@ namespace DataSharedLibrary
 
                     await transaction.CommitAsync();
                     await this.SaveChangesAsync();
+                    return newNovel.BookId;
 
                 }
             }
@@ -145,10 +156,11 @@ namespace DataSharedLibrary
                 transaction?.Rollback();
                 await this.SaveChangesAsync();
             }
+            return null;
         }
 
 
-        public async Task ImportBookByJsonModel(NovelContent novelContent)
+        public async Task<string?> ImportBookByJsonModel(NovelContent novelContent)
         {
             try
             {
@@ -157,7 +169,7 @@ namespace DataSharedLibrary
                     if (this.NovelContents.Any(x => x.URL == novelContent.URL))
                     {
                         Console.WriteLine("Already exist - skipped.");
-                        return;
+                        return null;
                     }
 
                     var newNovel = new NovelContent();
@@ -200,12 +212,94 @@ namespace DataSharedLibrary
                     await this.ChapterDetailContents.AddRangeAsync(lstChapterDetail);
 
                     await this.SaveChangesAsync();
+                    return newNovel.BookId;
 
                 }
             }
             catch (Exception)
             {
             }
+            return null;
+        }
+
+
+        public async Task<(string? bookId, string? msg)> ImportEpub(string filePath)
+        {
+            try
+            {
+                var epub = VersOne.Epub.EpubReader.ReadBook(filePath);
+
+                var bookName = epub.Title;
+                var bookAuthors = epub.Author;
+
+
+                //Console.WriteLine($"Book Name: {bookName}");
+                //Console.WriteLine($"Book Authors: {bookAuthors}");
+                var chapters = epub.Navigation;
+
+
+                //check exist
+                var existBook = await this.NovelContents.Where(x => x.BookName == bookName).FirstOrDefaultAsync();
+
+                if (existBook != null)
+                {
+                    return (existBook.BookId, "Already exist - Skipped");
+                }
+
+                var novel = new NovelContent();
+
+
+                novel.BookName = bookName;
+                novel.Author = bookAuthors;
+                novel.MaxChapterCount = chapters?.Count;
+                novel.BookId = Guid.NewGuid().ToString();
+                novel.Chapters = new List<ChapterContent>();
+                novel.ImageBase64 = Convert.ToBase64String(epub.CoverImage);
+
+                chapters?.ForEach(chapter =>
+                {
+                    var novelChapter = new ChapterContent();
+                    var index = chapters.IndexOf(chapter);
+                    var chapter_title = chapter.Title;
+
+                    novelChapter.IndexChapter = index;
+                    novelChapter.ChapterId = Guid.NewGuid().ToString();
+                    novelChapter.Title = chapter_title;
+                    novelChapter.BookId = novel.BookId;
+                    novelChapter.ChapterDetailContents = new List<ChapterDetailContent>();
+
+                    var chapter_content = chapter.HtmlContentFile?.Content;
+
+                    var htmlDoc = new HtmlDocument();
+                    htmlDoc.LoadHtml(chapter_content);
+
+                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerText;
+
+                    var lstBody = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                    lstBody?.ForEach(content =>
+                    {
+                        var contentChapter = new ChapterDetailContent();
+                        contentChapter.BookId = novel.BookId;
+                        contentChapter.ChapterId = novelChapter.ChapterId;
+                        contentChapter.Id = Guid.NewGuid().ToString();
+                        contentChapter.Content = content;
+                        novelChapter.ChapterDetailContents.Add(contentChapter);
+
+                    });
+                    novel.Chapters.Add(novelChapter);
+                }
+                );
+
+                await this.AddAsync(novel);
+                await this.SaveChangesAsync();
+                return (novel?.BookId, null);
+            }
+            catch (Exception ex)
+            {
+                return (null, ex.Message);
+            }
+
         }
 
 

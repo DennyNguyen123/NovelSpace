@@ -19,13 +19,13 @@ namespace NovelReader
     /// <summary>
     /// Interaction logic for OpenBookWindow.xaml
     /// </summary>
-    public partial class OpenBookWindow : Window, INotifyPropertyChanged
+    public partial class BookLibraryWindow : Window, INotifyPropertyChanged
     {
         public List<NovelContent> novelContents { get; set; }
 
         public MainWindow MainWindow { get; set; }
 
-        public OpenBookWindow()
+        public BookLibraryWindow()
         {
             InitializeComponent();
         }
