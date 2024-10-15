@@ -103,9 +103,11 @@ namespace DataSharedLibrary
 
 
                 transaction = await this.Database.BeginTransactionAsync();
-                using FileStream stream = File.OpenRead(filename);
-                NovelContent? novelContent = null;
-                novelContent = await JsonSerializer.DeserializeAsync<NovelContent?>(stream);
+                //using FileStream stream = File.OpenRead(filename);
+                //NovelContent? novelContent = null;
+                //novelContent = await JsonSerializer.DeserializeAsync<NovelContent?>(stream);
+
+                var novelContent = Utils.JsonFromCompress<NovelContent?>(filename);
                 if (novelContent != null)
                 {
                     var checkExist = await CheckExist(novelContent?.BookName);

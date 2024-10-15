@@ -6,14 +6,71 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ZstdNet;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace DataSharedLibrary
 {
+    public enum CompressType
+    {
+        Zstd,
+        GZip,
+    }
 
     public static class Utils
     {
 
-        public static string CompressText(string text)
+        // Hàm nén dữ liệu
+        public static string CompressZstd(string text)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(text); // Chuyển đổi chuỗi thành byte array
+            using (var compressor = new Compressor())
+            {
+                byte[] compressedData = compressor.Wrap(data); // Nén dữ liệu
+                return Convert.ToBase64String(compressedData); // Chuyển đổi byte array thành chuỗi Base64
+            }
+        }
+
+        public static string DecompressZstd(string compressedText)
+        {
+            byte[] compressedData = Convert.FromBase64String(compressedText); // Chuyển đổi chuỗi Base64 thành byte array
+            using (var decompressor = new Decompressor())
+            {
+                byte[] decompressedData = decompressor.Unwrap(compressedData); // Giải nén dữ liệu
+                return Encoding.UTF8.GetString(decompressedData); // Chuyển đổi byte array thành chuỗi
+            }
+        }
+
+        public static string DecompressZstd(byte[] compressedData)
+        {
+            // Chuyển đổi chuỗi Base64 thành byte array
+            using (var decompressor = new Decompressor())
+            {
+                byte[] decompressedData = decompressor.Unwrap(compressedData); // Giải nén dữ liệu
+                return Encoding.UTF8.GetString(decompressedData); // Chuyển đổi byte array thành chuỗi
+            }
+        }
+
+
+        public static T JsonFromCompress<T>(string filePath)
+        {
+            try
+            {
+                var fileByte = File.ReadAllBytes(filePath);
+
+                var text = DecompressZstd(fileByte);
+
+                return JsonSerializer.Deserialize<T?>(text);
+            }
+            catch (Exception)
+            {
+            }
+
+            return default(T);
+        }
+
+
+        public static string GZipCompressText(string text)
         {
             byte[] data = Encoding.UTF8.GetBytes(text);
             using (var compressedStream = new MemoryStream())
@@ -25,7 +82,7 @@ namespace DataSharedLibrary
             }
         }
 
-        public static string DecompressText(string compressedText)
+        public static string GZipDecompressText(string compressedText)
         {
             byte[] compressedData = Convert.FromBase64String(compressedText);
             using (var compressedStream = new MemoryStream(compressedData))

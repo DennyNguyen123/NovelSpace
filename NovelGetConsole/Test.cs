@@ -45,14 +45,14 @@ namespace NovelGetConsole
             Console.WriteLine($"Json length: {json?.Length}");
 
 
-            var compress = Utils.CompressText(json ?? "");
+            var compress = Utils.GZipCompressText(json ?? "");
             Console.WriteLine($"Excute compress: {DateTime.Now - startDate}");
             startDate = DateTime.Now;
             Console.WriteLine($"Compress length {compress?.Length}");
 
 
 
-            var decompress = Utils.DecompressText(compress ?? "");
+            var decompress = Utils.GZipDecompressText(compress ?? "");
             Console.WriteLine($"Excute de-compress: {DateTime.Now - startDate}");
             startDate = DateTime.Now;
             Console.WriteLine($"De-Compress length {decompress?.Length}");

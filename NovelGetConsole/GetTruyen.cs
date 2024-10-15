@@ -907,6 +907,58 @@ namespace GetTruyen
 
         }
 
+
+        public async Task ConvertToNewModel1()
+        {
+            string? folderPath = "D:\\Truyen\\JSON\\docfull.org";
+            string outputPath = @"D:\Truyen\JSON";
+
+            List<string> files = Directory.GetFiles(folderPath).ToList();
+
+
+            foreach (var item in files)
+            {
+                var filename = Path.GetFileNameWithoutExtension(item);
+
+                string url = $"https://docfull.vn/{filename}";
+
+                var rs = await FixMissingInfo(url);
+
+                var newModel = GetNewNovelModel(rs);
+
+                var fullPath = $"{outputPath}\\{filename}.json";
+                var json = JsonSerializer.Serialize(newModel);
+                await System.IO.File.WriteAllTextAsync(fullPath, json);
+                Console.WriteLine($"Done {fullPath}");
+            }
+        }
+
+
+        public async Task CompressFiles()
+        {
+            string? folderPath = "D:\\Truyen\\JSON\\Orginal_Json";
+            string outputPath = @"D:\Truyen\JSON\\ZstdCompressed";
+
+            List<string> files = Directory.GetFiles(folderPath).ToList();
+
+
+            foreach (var item in files)
+            {
+                var filename = Path.GetFileNameWithoutExtension(item);
+
+                var text = await File.ReadAllTextAsync(item);
+
+                var fullPath = $"{outputPath}\\{filename}.novel";
+                var compressText = Utils.CompressZstd(text);
+                await System.IO.File.WriteAllTextAsync(fullPath, compressText);
+
+                Console.WriteLine($"Done {fullPath}");
+            }
+        }
+
+
+
+
         public async Task Test()
         {
             string url = "https://docfull.vn/thanh-khu-dich-full/";
