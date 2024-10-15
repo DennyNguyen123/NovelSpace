@@ -35,18 +35,37 @@ namespace NovelReader
         {
             MainWindow = (MainWindow)Owner;
 
+            LoadNovels();
+            base.OnContentRendered(e);
+        }
+
+
+        private void LoadNovels()
+        {
             novelContents = MainWindow._AppDbContext.NovelContents.ToList();
 
             CardItemsControl.ItemsSource = novelContents;
-            this.Background = WpfUtils.ConvertHtmlColorToBrush(MainWindow.AppConfig.BackgroundColor);
-
-            base.OnContentRendered(e);
         }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         public void OnPropertyChange()
         {
             PropertyChanged?.Invoke(null, new PropertyChangedEventArgs(""));
+        }
+
+
+        private void OpenBook(NovelContent dataContext)
+        {
+
+            if (dataContext != null)
+            {
+                this.Close();
+                MainWindow.AppConfig.CurrentBookId = dataContext.BookId;
+                MainWindow.AppConfig.Save();
+                MainWindow.LoadNovelData();
+                MainWindow.UpdateUI();
+            }
         }
 
 
@@ -57,16 +76,148 @@ namespace NovelReader
             if (border != null)
             {
                 var dataContext = border.DataContext as NovelContent;
-                if (dataContext != null)
+                OpenBook(dataContext);
+            }
+        }
+
+        private void OpenItem_Click(object sender, RoutedEventArgs e)
+        {
+            var itemControl = sender as ItemsControl;
+            if (itemControl != null)
+            {
+                var dataContext = itemControl.DataContext as NovelContent;
+                OpenBook(dataContext);
+            }
+        }
+
+
+        private void ImportBook_Click(object sender, RoutedEventArgs e)
+        {
+            var filename = WpfUtils.GetFilePath(null, "EPUB files (*.epub)|*.epub|Novel files (*.novel)|*.novel");
+            string? bookId = null;
+            string? msg = null;
+            bool isDone = false;
+            DateTime startDate = DateTime.Now;
+            int timeOut = 120000;
+
+            if (!string.IsNullOrEmpty(filename))
+            {
+                var ext = System.IO.Path.GetExtension(filename);
+                var lstExtSupport = new List<string>() { ".epub", ".novel" };
+                bool isRunable = false;
+
+                if (!lstExtSupport.Contains(ext))
                 {
-                    this.Close();
-                    MainWindow.AppConfig.CurrentBookId = dataContext.BookId;
-                    MainWindow.AppConfig.Save();
-                    MainWindow.LoadNovelData();
-                    MainWindow.UpdateUI();
+                    this.ShowError($"Not support this file extension. Supported files are [{string.Join(", ", lstExtSupport)}]");
+                }
+
+                this.RunTaskWithSplash(
+                    () =>
+                    {
+
+                        if (ext == ".epub")
+                        {
+                            (bookId, msg) = MainWindow._AppDbContext.ImportEpub(filename).GetAwaiter().GetResult();
+                        }
+                        else if (ext == ".novel")
+                        {
+                            (bookId, msg) = MainWindow._AppDbContext.ImportBookByJsonModel(filename).GetAwaiter().GetResult();
+                        }
+
+                    }
+                    , doneAction: () =>
+                    {
+
+                        if (!string.IsNullOrWhiteSpace(msg) || string.IsNullOrWhiteSpace(bookId))
+                        {
+                            this.ShowError(msg);
+                        }
+                        else
+                        {
+                            string existMsg = "Already exist - ";
+                            this.ShowYesNoMessageBox($"{existMsg}Do you want open this book", "Open Book?",
+
+                                yesAction: () =>
+                                {
+                                    MainWindow.AppConfig.CurrentBookId = bookId;
+                                    MainWindow.AppConfig.Save();
+                                    MainWindow.LoadNovelData();
+                                    MainWindow.UpdateUI();
+                                    this.Close();
+                                }
+                                ,
+                                noAction: () =>
+                                {
+                                    LoadNovels();
+                                }
+
+                            );
+
+                        }
+                    }
+
+                    , textColor: MainWindow.AppConfig.TextColor
+                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                    , isRunAsync: true
+                    , isHideMainWindows: false
+                    );
+
+
+
+            }
+        }
+
+        private void DeleteItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+            {
+                var rs = MainWindow._AppDbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+                if (!rs.isSuccess)
+                {
+                    this.ShowError(rs.msg);
+                }
+                else
+                {
+                    LoadNovels();
                 }
             }
         }
+
+        private void ExportItem_Click(object sender, RoutedEventArgs e)
+        {
+
+
+            if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+            {
+                var filename = WpfUtils.SaveFileFirst("EPUB files (*.epub)|*.epub");
+
+                if (!string.IsNullOrEmpty(filename))
+                {
+
+                    this.RunTaskWithSplash(
+                    action: () =>
+                    {
+                        MainWindow._AppDbContext.ExportToEpub(filename, novel.BookId).GetAwaiter().GetResult();
+                    }
+                    , doneAction: () =>
+                    {
+                        WpfUtils.OpenFolderAndSelectFile(filename);
+                    }
+                    , isRunAsync: true
+                    , isHideMainWindows: false
+                    , textColor: MainWindow.AppConfig.TextColor
+                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                    );
+
+                }
+
+            }
+
+
+        }
+
+
+
     }
 
 

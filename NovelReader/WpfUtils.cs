@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace NovelReader
     public static class WpfUtils
     {
 
-        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null, bool isHideManWindows = true, bool isRunAsync = true, string? textColor = null, string? backgroudColor = null)
+        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null, bool isHideMainWindows = true, bool isRunAsync = true, string? textColor = null, string? backgroudColor = null)
         {
 
             SplashScreenWindow splash = new SplashScreenWindow();
@@ -33,7 +34,7 @@ namespace NovelReader
             SetPositionCenterParent(splash, windows);
             splash.Show();
 
-            if (isHideManWindows)
+            if (isHideMainWindows)
             {
                 windows.Hide();
             }
@@ -46,7 +47,7 @@ namespace NovelReader
                 {
                     splash.Close(); // Đóng SplashScreen
                     doneAction?.Invoke();
-                    if (isHideManWindows)
+                    if (isHideMainWindows)
                     {
                         windows.Show();     // Hiển thị MainWindow
                     }
@@ -69,7 +70,7 @@ namespace NovelReader
 
         public static void ShowError(this Window window, string msg)
         {
-            MessageBox.Show(messageBoxText: msg, "Error", MessageBoxButton.OK, (MessageBoxImage)MessageBoxIcon.Error);
+            MessageBox.Show(messageBoxText: msg, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         public static void ShowYesNoMessageBox(
@@ -92,6 +93,44 @@ namespace NovelReader
             {
                 noAction?.Invoke();
             }
+        }
+
+
+        public static void OpenFolderAndSelectFile(string filePath)
+        {
+            // Kiểm tra xem file có tồn tại không
+            if (System.IO.File.Exists(filePath))
+            {
+                // Mở thư mục chứa file và highlight file đó
+                Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+            }
+            else
+            {
+                MessageBox.Show("File không tồn tại!");
+            }
+        }
+
+
+        public static string SaveFileFirst(string filter = "Text file (*.txt)|*.txt")
+        {
+            // Tạo SaveFileDialog
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+
+            // Đặt bộ lọc cho loại file (Ví dụ: Chỉ cho phép lưu file .txt hoặc .csv)
+            saveFileDialog.Filter = filter;
+
+            // Hiển thị hộp thoại và kiểm tra xem người dùng có chọn đường dẫn hay không
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                // Lấy full path của file mà người dùng chọn
+                string filePath = saveFileDialog.FileName;
+
+                // Thực hiện việc lưu file
+                System.IO.File.WriteAllText(filePath, "");
+
+                return filePath;
+            }
+            return null;
         }
 
         public static void ClearRAM()

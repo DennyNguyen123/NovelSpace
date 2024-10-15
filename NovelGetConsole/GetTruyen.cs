@@ -898,7 +898,7 @@ namespace GetTruyen
 
                 var newModel = GetNewNovelModel(rs);
 
-                await appDbContext.ImportBookByJsonModel(newModel);
+                await appDbContext.ImportBookNovelModel(newModel);
 
                 Console.WriteLine($"Done {filename}");
 

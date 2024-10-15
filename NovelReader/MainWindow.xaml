@@ -70,20 +70,9 @@
                     <MenuItem.Header>
                         <StackPanel Orientation="Horizontal">
                             <!-- Biểu tượng của MenuItem -->
-                            <fa:FontAwesome  Foreground="{Binding AppConfig.TextColor}" Icon="FolderOpen" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,5,0"/>
+                            <fa:FontAwesome  Foreground="{Binding AppConfig.TextColor}" Icon="Book" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,5,0"/>
                             <!-- Văn bản của MenuItem -->
-                            <TextBlock Text="Open Book" VerticalAlignment="Center" Foreground="{Binding AppConfig.TextColor}"/>
-                        </StackPanel>
-                    </MenuItem.Header>
-                </MenuItem>
-
-                <MenuItem Click="ImportBook_Click">
-                    <MenuItem.Header>
-                        <StackPanel Orientation="Horizontal">
-                            <!-- Biểu tượng của MenuItem -->
-                            <fa:FontAwesome  Foreground="{Binding AppConfig.TextColor}" Icon="Download" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,5,0"/>
-                            <!-- Văn bản của MenuItem -->
-                            <TextBlock Text="Import Book" VerticalAlignment="Center" Foreground="{Binding AppConfig.TextColor}"/>
+                            <TextBlock Text="Library" VerticalAlignment="Center" Foreground="{Binding AppConfig.TextColor}"/>
                         </StackPanel>
                     </MenuItem.Header>
                 </MenuItem>

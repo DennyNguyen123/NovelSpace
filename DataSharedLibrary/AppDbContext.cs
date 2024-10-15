@@ -1,6 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using QuickEPUB;
 using System;
 using System.Data;
 using System.Text.Json;
@@ -37,10 +38,10 @@ namespace DataSharedLibrary
         public DbSet<CurrentReader> CurrentReader { get; set; }
 
 
-        public async Task<CurrentReader> GetCurrentReader(string bookId)
+        public async Task<CurrentReader?> GetCurrentReader(string? bookId)
         {
             var cur = await this.CurrentReader.Where(x => x.BookId == bookId).FirstOrDefaultAsync();
-            if (cur == null)
+            if (cur == null && !string.IsNullOrEmpty(bookId))
             {
                 cur = new CurrentReader();
                 cur.BookId = bookId;
@@ -80,7 +81,6 @@ namespace DataSharedLibrary
 
         public async Task<ChapterContent> GetContentChapter(ChapterContent chapter)
         {
-            //await Task.Delay(5000);
             var content = await this.ChapterDetailContents.AsNoTracking()
                 .Where(x =>
                 !string.IsNullOrWhiteSpace(x.Content)
@@ -95,25 +95,34 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<string?> ImportBookByJsonModel(string filename)
+        public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename)
         {
             IDbContextTransaction? transaction = null;
             try
             {
+
+
                 transaction = await this.Database.BeginTransactionAsync();
                 using FileStream stream = File.OpenRead(filename);
                 NovelContent? novelContent = null;
                 novelContent = await JsonSerializer.DeserializeAsync<NovelContent?>(stream);
                 if (novelContent != null)
                 {
+                    var checkExist = await CheckExist(novelContent?.BookName);
+
+                    if (checkExist.isExist)
+                    {
+                        return (checkExist.bookId, checkExist.msg);
+                    }
+
                     var newNovel = new NovelContent();
-                    newNovel.Title = novelContent.Title;
-                    newNovel.URL = novelContent.URL;
-                    newNovel.Author = novelContent.Author;
-                    newNovel.BookId = novelContent.BookId ?? Guid.NewGuid().ToString();
-                    newNovel.MaxChapterCount = novelContent.MaxChapterCount;
-                    newNovel.BookName = novelContent.BookName;
-                    newNovel.ImageBase64 = novelContent.ImageBase64;
+                    newNovel.Title = novelContent?.Title;
+                    newNovel.URL = novelContent?.URL;
+                    newNovel.Author = novelContent?.Author;
+                    newNovel.BookId = novelContent?.BookId ?? Guid.NewGuid().ToString();
+                    newNovel.MaxChapterCount = novelContent?.MaxChapterCount;
+                    newNovel.BookName = novelContent?.BookName;
+                    newNovel.ImageBase64 = novelContent?.ImageBase64;
 
 
                     var lstChapter = new List<ChapterContent>();
@@ -147,29 +156,31 @@ namespace DataSharedLibrary
 
                     await transaction.CommitAsync();
                     await this.SaveChangesAsync();
-                    return newNovel.BookId;
+                    return (newNovel.BookId, null);
 
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 transaction?.Rollback();
                 await this.SaveChangesAsync();
+                return (null, ex.Message);
             }
-            return null;
+            return (null, null);
         }
 
 
-        public async Task<string?> ImportBookByJsonModel(NovelContent novelContent)
+        public async Task<string?> ImportBookNovelModel(NovelContent novelContent)
         {
             try
             {
                 if (novelContent != null)
                 {
-                    if (this.NovelContents.Any(x => x.URL == novelContent.URL))
+                    var checkExist = await CheckExist(novelContent.BookName);
+
+                    if (checkExist.isExist)
                     {
-                        Console.WriteLine("Already exist - skipped.");
-                        return null;
+                        return (checkExist.bookId);
                     }
 
                     var newNovel = new NovelContent();
@@ -223,6 +234,20 @@ namespace DataSharedLibrary
         }
 
 
+        public async Task<(bool isExist, string? bookId, string? msg)> CheckExist(string? bookName)
+        {
+            //check exist
+            var existBook = await this.NovelContents.Where(x => x.BookName == bookName).FirstOrDefaultAsync();
+
+            if (existBook != null)
+            {
+                return (true, existBook.BookId, "Already exist - Skipped");
+            }
+
+            return (false, null, null);
+        }
+
+
         public async Task<(string? bookId, string? msg)> ImportEpub(string filePath)
         {
             try
@@ -237,14 +262,13 @@ namespace DataSharedLibrary
                 //Console.WriteLine($"Book Authors: {bookAuthors}");
                 var chapters = epub.Navigation;
 
+                var checkExist = await CheckExist(bookName);
 
-                //check exist
-                var existBook = await this.NovelContents.Where(x => x.BookName == bookName).FirstOrDefaultAsync();
-
-                if (existBook != null)
+                if (checkExist.isExist)
                 {
-                    return (existBook.BookId, "Already exist - Skipped");
+                    return (checkExist.bookId, checkExist.msg);
                 }
+
 
                 var novel = new NovelContent();
 
@@ -277,6 +301,13 @@ namespace DataSharedLibrary
 
                     var lstBody = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
+                    if (lstBody?.Count < 2)
+                    {
+                        var separatestring = new string[] { ". ", "? ", "! " };
+                        lstBody = body.Split(separatestring, StringSplitOptions.RemoveEmptyEntries).ToList();
+                    }
+
+
                     lstBody?.ForEach(content =>
                     {
                         var contentChapter = new ChapterDetailContent();
@@ -287,7 +318,9 @@ namespace DataSharedLibrary
                         novelChapter.ChapterDetailContents.Add(contentChapter);
 
                     });
+
                     novel.Chapters.Add(novelChapter);
+
                 }
                 );
 
@@ -303,7 +336,52 @@ namespace DataSharedLibrary
         }
 
 
+        public async Task ExportToEpub(string epubFileName, string? bookId)
+        {
 
+            var novel = await GetNovel(bookId);
+
+            var doc = new Epub(novel?.BookName, novel?.Author);
+
+            var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64));
+            doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
+
+
+            novel?.Chapters?.ForEach(async (chap) =>
+            {
+                chap = await GetContentChapter(chap);
+
+                string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{string.Join("<br><br>", chap?.Content)}<br><br><br>";
+                
+                doc.AddSection(chap?.Title, html);
+            }
+            );
+
+            using (var fs = new FileStream(epubFileName, FileMode.Create))
+            {
+                doc.Export(fs);
+            }
+
+        }
+
+
+        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId)
+        {
+            try
+            {
+
+                await this.ChapterDetailContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                await this.ChapterContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                await this.NovelContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                await this.SaveChangesAsync();
+                return (true, null);
+
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
+        }
 
     }
 }

@@ -56,7 +56,7 @@ namespace NovelReader
             }
         }
 
-        public CurrentReader _current_reader { get; set; }
+        public CurrentReader? _current_reader { get; set; }
 
         public Thickness contentThinkness { get; set; }
 
@@ -238,7 +238,7 @@ namespace NovelReader
             , doneAction: () =>
             {
             }
-            , isHideManWindows: false
+            , isHideMainWindows: false
             , isRunAsync: false
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
@@ -261,10 +261,9 @@ namespace NovelReader
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
 
-                _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
-
-
                 this.Novel = _AppDbContext.GetNovel(bookId).GetAwaiter().GetResult();
+
+                _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
             }
             , doneAction: () =>
             {
@@ -305,6 +304,27 @@ namespace NovelReader
             }
         }
 
+
+        public void EndOfBook()
+        {
+            this.ShowYesNoMessageBox("You have finished reading the book, do you want to read it again?"
+                   , ""
+                   , yesAction: () =>
+                   {
+                       _current_reader.CurrentChapter = 0;
+                       _current_reader.CurrentLine = 0;
+                       _current_reader.CurrentPosition = 0;
+                       LoadChapterContent();
+                   }
+                   , noAction: () =>
+                   {
+                       BookLibraryWindow book = new BookLibraryWindow();
+                       book.Owner = this;
+                       book.ShowDialog();
+                   }
+                   );
+        }
+
         public void MoveNextLine()
         {
 
@@ -320,18 +340,15 @@ namespace NovelReader
                 {
                     _current_reader.CurrentLine = 0;
                     _current_reader.CurrentChapter += 1;
+                    LoadChapterContent();
 
                 }
                 else//Move to first
                 {
-                    _current_reader.CurrentLine = 0;
-                    _current_reader.CurrentChapter = 0;
+                    EndOfBook();
                 }
 
-                LoadChapterContent();
             }
-
-            //ContinueSpeech();
 
 
         }
@@ -340,17 +357,17 @@ namespace NovelReader
         {
             var currentIndex = Novel?.Chapters?.IndexOf(SelectedChapter);
             var newIndex = currentIndex + 1;
-            if (newIndex.HasValue & newIndex <= Novel?.Chapters?.Count())
+            if (newIndex.HasValue & newIndex <= Novel?.Chapters?.Count() - 1)
             {
-
                 _current_reader.CurrentChapter = newIndex.Value;
                 _current_reader.CurrentLine = 0;
                 _current_reader.CurrentPosition = 0;
 
-                //var selectedChapter = Novel?.Chapters?[newIndex.Value] ?? new ChapterContent();
-                //SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter);
-                //ModifySelectedChapter();
-                LoadChapterContent();
+            }
+            else
+            {
+                EndOfBook();
+
             }
         }
 
@@ -799,78 +816,10 @@ namespace NovelReader
             openBookWindow.ShowDialog();
         }
 
-        private void ImportActionBef(string? bookId, string? msg)
+
+        public void ImportBook_Click(object sender, RoutedEventArgs e)
         {
-            if (!string.IsNullOrWhiteSpace(msg) & string.IsNullOrWhiteSpace(bookId))
-            {
-                this.ShowError(msg);
-            }
-            else
-            {
-                string existMsg = "Already exist - ";
-                this.ShowYesNoMessageBox($"{existMsg}Do you want open this book", "Open Book?",
 
-                    yesAction: () =>
-                    {
-                        AppConfig.CurrentBookId = bookId;
-                        AppConfig.Save();
-                        LoadNovelData();
-                        UpdateUI();
-                    }
-
-                );
-
-            }
-        }
-
-
-        private void ImportBook_Click(object sender, RoutedEventArgs e)
-        {
-            var filename = WpfUtils.GetFilePath(null, "EPUB files (*.epub)|*.epub|Novel files (*.novel)|*.novel");
-            string? bookId = null;
-            string? msg = null;
-            bool isDone = false;
-            DateTime startDate = DateTime.Now;
-            int timeOut = 120000;
-
-            if (!string.IsNullOrEmpty(filename))
-            {
-                var ext = Path.GetExtension(filename);
-                if (ext == ".novel")
-                {
-                    this.RunTaskWithSplash(
-                        () =>
-                        {
-                            bookId = _AppDbContext.ImportBookByJsonModel(filename).GetAwaiter().GetResult();
-                        }
-                        , doneAction: () =>
-                        {
-                            isDone = true;
-                        }
-                        , textColor: AppConfig.TextColor
-                        , backgroudColor: AppConfig.BackgroundColor
-                        , isRunAsync: true
-                        );
-
-                }
-                else if (ext == ".epub")
-                {
-                    this.RunTaskWithSplash(action: () =>
-                    {
-                        (bookId, msg) = _AppDbContext.ImportEpub(filename).GetAwaiter().GetResult();
-                    }
-                    , doneAction: () =>
-                    {
-                        ImportActionBef(bookId, msg);
-                    }
-                    , textColor: AppConfig.TextColor
-                    , backgroudColor: AppConfig.BackgroundColor
-                    , isRunAsync: true
-                    );
-
-                }
-
-            }
 
         }
 

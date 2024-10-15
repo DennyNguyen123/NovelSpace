@@ -3,32 +3,65 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:NovelReader"
+        xmlns:local="clr-namespace:NovelReader" xmlns:fa="http://schemas.fontawesome.io/icons/"
         mc:Ignorable="d"
-        Title="Open Book" Height="450" Width="800">
+        Title="Library" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-    <ScrollViewer>
-        <ItemsControl x:Name="CardItemsControl">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel IsItemsHost="True" Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Border BorderBrush="#ddd" BorderThickness="1" Margin="10" CornerRadius="5" Padding="10" Background="White"
+        
+        <StackPanel Orientation="Horizontal"  Grid.Row="0" x:Name="menuPannel">
+            <!-- ComboBox (Dropdown Menu) -->
+            <Menu Margin="2,0,2,0" Background="Transparent">
+                <MenuItem Click="ImportBook_Click">
+                    <MenuItem.Header>
+                        <StackPanel Orientation="Horizontal">
+                            <!-- Biểu tượng của MenuItem -->
+                            <fa:FontAwesome  Foreground="{Binding Owner.AppConfig.TextColor}" Icon="Download" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,5,0"/>
+                            <!-- Văn bản của MenuItem -->
+                            <TextBlock Text="Import Book" VerticalAlignment="Center" Foreground="{Binding Owner.AppConfig.TextColor}"/>
+                        </StackPanel>
+                    </MenuItem.Header>
+                </MenuItem>
+            </Menu>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <ItemsControl x:Name="CardItemsControl">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel IsItemsHost="True" Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="#ddd" BorderThickness="1" Margin="10" CornerRadius="5" Padding="10" Background="LightGoldenrodYellow"
                             MouseLeftButtonUp="Border_MouseLeftButtonUp"
                             >
-                        <StackPanel Width="150">
-                            <!-- Cố định chiều rộng card -->
-                            <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImageConverter}}" 
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Open Book" Click="OpenItem_Click"/>
+                                    <MenuItem Header="Delete Book" Click="DeleteItem_Click"/>
+                                    <MenuItem Header="Export Book" Click="ExportItem_Click"/>
+                                </ContextMenu>
+                            </Border.ContextMenu>
+                            
+                            <StackPanel Width="150">
+                                <!-- Cố định chiều rộng card -->
+                                <Image Source="{Binding ImageBase64, Converter={StaticResource Base64ToImageConverter}}" 
                                Width="100" Height="100" Margin="0,0,0,10"/>
-                            <TextBlock Text="{Binding BookName}" FontWeight="Bold" FontSize="16" TextWrapping="Wrap"/>
-                            <TextBlock Text="{Binding Author}" Foreground="Gray" FontSize="12"/>
-                        </StackPanel>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-    </ScrollViewer>
+                                <TextBlock Text="{Binding BookName}" FontWeight="Bold" FontSize="16" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Author}" Foreground="Gray" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+
+    </Grid>
 </Window>
