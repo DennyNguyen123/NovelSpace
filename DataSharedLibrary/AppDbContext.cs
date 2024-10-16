@@ -6,7 +6,9 @@ using System;
 using System.Data;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Xml.Schema;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DataSharedLibrary
 {
@@ -349,13 +351,36 @@ namespace DataSharedLibrary
             doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
 
 
-            novel?.Chapters?.ForEach(async (chap) =>
-            {
-                chap = await GetContentChapter(chap);
+            var lstChapter = new List<dynamic>();
 
-                string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{string.Join("<br><br>", chap?.Content)}<br><br><br>";
-                
-                doc.AddSection(chap?.Title, html);
+            if (novel != null && novel.Chapters != null && novel.Chapters.Count > 0)
+            {
+                await Parallel.ForEachAsync(novel.Chapters, async (chap, cancellationToken) =>
+                {
+                    using var db = new AppDbContext(this._dbPath, new DbContextOptions<AppDbContext>());
+
+                    chap = await db.GetContentChapter(chap);
+
+                    string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{string.Join("<br><br>", chap?.Content)}<br><br><br>";
+
+
+                    var epubChap = new
+                    {
+                        Title = chap.Title,
+                        Index = chap.IndexChapter,
+                        Html = html,
+                    };
+
+                    lstChapter.Add(epubChap);
+                });
+            }
+
+
+
+
+            lstChapter?.OrderBy(x => x.Index)?.ToList()?.ForEach(async (chap) =>
+            {
+                doc.AddSection(chap?.Title, chap.Html);
             }
             );
 
