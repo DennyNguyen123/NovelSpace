@@ -86,7 +86,7 @@
                 <ColumnDefinition Width="3*" x:Name="leftColumn"/>
                 <ColumnDefinition Width="5"  x:Name="gridSplitter"/>
                 <!-- Column 2: 70% width -->
-                <ColumnDefinition Width="7*"/>
+                <ColumnDefinition Width="7*"  x:Name="righColumn"/>
             </Grid.ColumnDefinitions>
 
             <!-- Content for the first column (left) -->

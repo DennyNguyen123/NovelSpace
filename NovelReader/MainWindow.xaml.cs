@@ -87,7 +87,7 @@ namespace NovelReader
 
             InitializeComponent();
 
-            
+
             if ((AppConfig.LastWidth ?? 0) >= 0) this.Width = AppConfig.LastWidth.Value;
             if ((AppConfig.LastHeigh ?? 0) >= 0) this.Height = AppConfig.LastHeigh.Value;
             if ((AppConfig.LastLeft ?? 0) >= 0) this.Left = AppConfig.LastLeft.Value;
@@ -592,8 +592,11 @@ namespace NovelReader
                     case Key.Escape:
                         OpenConfig_Click(null, new RoutedEventArgs());
                         break;
-                    case Key.F1:
+                    case Key.F12:
                         ToggleTOC_Click(null, new RoutedEventArgs());
+                        break;
+                    case Key.F3:
+                        OpenBook_Click(null, new RoutedEventArgs());
                         break;
                     default:
                         break;
@@ -810,6 +813,7 @@ namespace NovelReader
             {
                 leftColumn.Width = new GridLength(3, GridUnitType.Star); // Show the column by restoring its width to 30%
                 gridSplitter.Width = new GridLength(5);
+                righColumn.Width = new GridLength(7, GridUnitType.Star);
             }
         }
 
