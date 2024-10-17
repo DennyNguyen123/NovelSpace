@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using QuickEPUB;
 using System;
 using System.Data;
+using System.Security.Policy;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -280,7 +281,7 @@ namespace DataSharedLibrary
                 var novel = new NovelContent();
 
 
-                novel.BookName = bookName.Replace(bookAuthors, "").Replace(" - ", "");
+                novel.BookName = bookName;
                 novel.Author = bookAuthors;
                 novel.MaxChapterCount = chapters?.Count;
                 novel.BookId = Guid.NewGuid().ToString();
@@ -313,9 +314,7 @@ namespace DataSharedLibrary
                     var htmlDoc = new HtmlDocument();
                     htmlDoc.LoadHtml(chapter_content);
 
-                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerText
-                    .Replace(".",". ")
-                    .Replace(". . ","..");
+                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerText;
 
                     var lstBody = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
@@ -361,42 +360,23 @@ namespace DataSharedLibrary
 
             var doc = new Epub(novel?.BookName, novel?.Author);
 
-            var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64));
+            var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64??""));
             doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
 
 
-            var lstChapter = new List<dynamic>();
-
-            if (novel != null && novel.Chapters != null && novel.Chapters.Count > 0)
+            novel?.Chapters?.ForEach(async chap =>
             {
-                await Parallel.ForEachAsync(novel.Chapters, async (chap, cancellationToken) =>
+                chap = await this.GetContentChapter(chap);
+                string content = "";
+
+                if (chap?.Content?.Count > 0)
                 {
-                    using var db = new AppDbContext(this._dbPath, new DbContextOptions<AppDbContext>());
+                    content = string.Join("<br><br>", chap.Content);
+                }
 
-                    chap = await db.GetContentChapter(chap);
-
-                    string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{string.Join("<br><br>", chap?.Content)}<br><br><br>";
-
-
-                    var epubChap = new
-                    {
-                        Title = chap.Title,
-                        Index = chap.IndexChapter,
-                        Html = html,
-                    };
-
-                    lstChapter.Add(epubChap);
-                });
-            }
-
-
-
-
-            lstChapter?.OrderBy(x => x.Index)?.ToList()?.ForEach(async (chap) =>
-            {
-                doc.AddSection(chap?.Title, chap.Html);
-            }
-            );
+                string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{content}<br><br><br>";
+                doc.AddSection(chap?.Title, html);
+            });
 
             using (var fs = new FileStream(epubFileName, FileMode.Create))
             {
