@@ -58,20 +58,23 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<NovelContent?> GetNovel(string? bookId)
+        public async Task<NovelContent?> GetNovel(string? bookId, bool isMergeAuthorName = true)
         {
             var novel = await this.NovelContents.AsNoTracking().Where(x => x.BookId == bookId).FirstOrDefaultAsync();
 
             if (novel != null)
             {
-                novel.BookName = $"{novel.BookName} - {novel.Author}";
+                novel.BookName = !isMergeAuthorName ? novel.BookName : $"{novel.BookName} - {novel.Author}";
                 var lstChapter = await this.ChapterContents.AsNoTracking().Where(x => x.BookId == novel.BookId).OrderBy(x => x.IndexChapter).ToListAsync();
                 if (lstChapter?.Count() > 0)
                 {
                     lstChapter.ForEach(x =>
                     {
                         x.Content = new List<string?>();
-                        x.Title = $"[{x.IndexChapter + 1}/{novel.MaxChapterCount}] {x.Title}";
+                        if (isMergeAuthorName)
+                        {
+                            x.Title = $"[{x.IndexChapter + 1}/{novel.MaxChapterCount}] {x.Title}";
+                        }
                     }
                     );
                     novel?.Chapters?.AddRange(lstChapter);
@@ -277,12 +280,21 @@ namespace DataSharedLibrary
                 var novel = new NovelContent();
 
 
-                novel.BookName = bookName;
+                novel.BookName = bookName.Replace(bookAuthors, "").Replace(" - ", "");
                 novel.Author = bookAuthors;
                 novel.MaxChapterCount = chapters?.Count;
                 novel.BookId = Guid.NewGuid().ToString();
                 novel.Chapters = new List<ChapterContent>();
-                novel.ImageBase64 = Convert.ToBase64String(epub.CoverImage);
+
+                if (epub?.CoverImage != null)
+                {
+                    novel.ImageBase64 = Convert.ToBase64String(epub.CoverImage);
+                }
+
+                if (chapters?.Count == 1 && chapters?.FirstOrDefault()?.NestedItems?.Count > 0)
+                {
+                    chapters = chapters.FirstOrDefault()?.NestedItems;
+                }
 
                 chapters?.ForEach(chapter =>
                 {
@@ -301,7 +313,9 @@ namespace DataSharedLibrary
                     var htmlDoc = new HtmlDocument();
                     htmlDoc.LoadHtml(chapter_content);
 
-                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerText;
+                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerText
+                    .Replace(".",". ")
+                    .Replace(". . ","..");
 
                     var lstBody = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
@@ -343,7 +357,7 @@ namespace DataSharedLibrary
         public async Task ExportToEpub(string epubFileName, string? bookId)
         {
 
-            var novel = await GetNovel(bookId);
+            var novel = await GetNovel(bookId, isMergeAuthorName: false);
 
             var doc = new Epub(novel?.BookName, novel?.Author);
 

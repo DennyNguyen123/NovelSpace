@@ -204,7 +204,7 @@ namespace NovelReader
 
         public void UpdateUI()
         {
-            NumChapterGoto.Maximum = Novel.MaxChapterCount;
+            NumChapterGoto.Maximum = Novel?.Chapters?.Count;
             NumChapterGoto.Value = _current_reader.CurrentChapter;
 
             InitTriggerChangeColor();
