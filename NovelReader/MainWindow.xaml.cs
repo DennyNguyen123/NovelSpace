@@ -86,6 +86,8 @@ namespace NovelReader
 
 
             InitializeComponent();
+
+            
             if ((AppConfig.LastWidth ?? 0) >= 0) this.Width = AppConfig.LastWidth.Value;
             if ((AppConfig.LastHeigh ?? 0) >= 0) this.Height = AppConfig.LastHeigh.Value;
             if ((AppConfig.LastLeft ?? 0) >= 0) this.Left = AppConfig.LastLeft.Value;
@@ -200,6 +202,9 @@ namespace NovelReader
 
         public void UpdateUI()
         {
+            NumChapterGoto.Maximum = Novel.MaxChapterCount;
+            NumChapterGoto.Value = _current_reader.CurrentChapter;
+
             InitTriggerChangeColor();
 
             OnPropertyChanged("");
@@ -291,7 +296,7 @@ namespace NovelReader
                 {
                     this.SelectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                 }
-
+                NumChapterGoto.DefaultValue = _current_reader.CurrentChapter;
                 lstContent.SelectedIndex = _current_reader.CurrentLine;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
@@ -364,7 +369,7 @@ namespace NovelReader
             {
                 _current_reader.CurrentChapter = newIndex.Value;
                 _current_reader.CurrentLine = 0;
-                _current_reader.CurrentPosition = 0; 
+                _current_reader.CurrentPosition = 0;
                 LoadChapterContent();
             }
             else
@@ -770,6 +775,18 @@ namespace NovelReader
         private void ButtonNextChap_Click(object sender, RoutedEventArgs e)
         {
             MoveNextChap();
+        }
+
+
+        private void ButtonGoto_Click(object sender, RoutedEventArgs e)
+        {
+            var chap = NumChapterGoto.Value ?? 0;
+
+            _current_reader.CurrentChapter = chap > 0 ? chap - 1 : chap;
+
+            LoadChapterContent();
+
+
         }
 
 

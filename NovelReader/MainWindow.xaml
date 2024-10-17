@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="{Binding Novel.BookName}" Height="Auto" Width="Auto"
         Background="{Binding AppConfig.BackgroundColor}"
-        xmlns:tb="http://www.hardcodet.net/taskbar"
+        xmlns:tb="http://www.hardcodet.net/taskbar" xmlns:forms="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms" xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         StateChanged="Window_StateChanged"
         KeyUp="lstContent_KeyDown"
         LocationChanged="Window_LocationChanged"
@@ -92,8 +92,15 @@
             <!-- Content for the first column (left) -->
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"></RowDefinition>
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <xctk:IntegerUpDown Name="NumChapterGoto"/>
+                    <Button Content="Goto" Click="ButtonGoto_Click"/>
+                </StackPanel>
+
                 <DockPanel Grid.Row="1">
                     <ListView
                     x:Name="ChapterListView"
