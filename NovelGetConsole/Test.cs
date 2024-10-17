@@ -15,6 +15,43 @@ namespace NovelGetConsole
     {
 
 
+        public async Task TestForeachMultiThread()
+        {
+            List<string> lst = new List<string>()
+            {
+                "A",
+                "B",
+                "C",
+                "D",
+                "E"
+            };
+
+            var cts = new CancellationTokenSource(); // Tạo nguồn token để hủy
+
+            await Parallel.ForEachAsync(lst, cts.Token, async (item, cancellationToken) =>
+            {
+                if (cts.IsCancellationRequested)
+                {
+                    return;
+                }
+                // Giả lập công việc không đồng bộ
+                await Task.Delay(1000); // Giả sử mỗi công việc mất 1000ms
+
+                if (item == "C")
+                {
+                    await Task.Delay(1000); // Giả sử mỗi công việc mất 1000ms
+                    // Hủy tất cả các tác vụ
+                    cts.Cancel();
+                    return;
+                }
+
+
+                Console.WriteLine(item);
+
+            });
+
+        }
+
         public async Task TestCompress()
         {
             DateTime startDate = DateTime.Now;
@@ -78,7 +115,7 @@ namespace NovelGetConsole
 
             using var db = new AppDbContext(@"D:\Truyen\SQLite\data.db", new DbContextOptions<AppDbContext>());
             //check exist
-            var existBook = db.NovelContents.Any(x=>x.BookName == bookName);
+            var existBook = db.NovelContents.Any(x => x.BookName == bookName);
 
             if (existBook)
             {
@@ -121,7 +158,7 @@ namespace NovelGetConsole
                 {
                     var contentChapter = new ChapterDetailContent();
                     contentChapter.BookId = novel.BookId;
-                    contentChapter.ChapterId  = novelChapter.ChapterId;
+                    contentChapter.ChapterId = novelChapter.ChapterId;
                     contentChapter.Id = Guid.NewGuid().ToString();
                     contentChapter.Content = content;
                     novelChapter.ChapterDetailContents.Add(contentChapter);

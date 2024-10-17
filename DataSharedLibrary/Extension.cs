@@ -10,6 +10,37 @@ namespace DataSharedLibrary
 {
     public static class Extension
     {
+
+        public static async Task ForeachMultiThread<T>(this IEnumerable<T> list, Action<T> action, int maxThread = 5)
+        {
+            using var semaphore = new SemaphoreSlim(maxThread);
+            var tasks = new List<Task>();
+            var lockObject = new object(); // Để đảm bảo thứ tự in ra
+
+            foreach (var item in list)
+            {
+                await semaphore.WaitAsync();
+
+                tasks.Add(Task.Run(() =>
+                {
+                    try
+                    {
+                        // Sử dụng lock để đảm bảo thứ tự khi in ra kết quả
+                        lock (lockObject)
+                        {
+                            action(item);
+                        }
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
         public static T? Clone<T>(this T input)
         {
             if (input == null)

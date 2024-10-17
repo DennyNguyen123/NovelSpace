@@ -162,20 +162,20 @@ namespace GetTruyen
         {
             //await MenuCommand();
 
-            var getTruyen = new GetTruyen();
-            Console.WriteLine("Loading...");
-            var isLoad = await getTruyen.FirstLoad();
+            //var getTruyen = new GetTruyen();
+            //Console.WriteLine("Loading...");
+            //var isLoad = await getTruyen.FirstLoad();
 
-            if (isLoad ?? false == true)
-            {
-                //await getTruyen.FixAndImport();
-                await getTruyen.CompressFiles();
-            }
+            //if (isLoad ?? false == true)
+            //{
+            //    //await getTruyen.FixAndImport();
+            //    await getTruyen.CompressFiles();
+            //}
 
 
 
-            //var test = new Test();
-            //await test.TestReadEpub();
+            var test = new Test();
+            await test.TestForeachMultiThread();
 
 
             Console.WriteLine("Done");
