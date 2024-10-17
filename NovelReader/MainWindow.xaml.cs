@@ -138,6 +138,8 @@ namespace NovelReader
                 this.Show();
                 this.WindowState = WindowState.Normal; // Đảm bảo cửa sổ hiển thị bình thường
                 this.Activate(); // Đưa cửa sổ lên phía trước
+                this.Focus();
+                this.lstContent.Focus();
             }
         }
 
