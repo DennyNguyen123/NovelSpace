@@ -95,6 +95,22 @@ namespace DataSharedLibrary
         }
 
 
+        public static void ClearRAM(bool forceFullCollection = false)
+        {
+            // Collect only Generation 0 (short-lived objects)
+            GC.Collect(0);
+            GC.WaitForPendingFinalizers();
+
+            if (forceFullCollection)
+            {
+                // Optionally, collect Generation 2 (long-lived objects)
+                GC.Collect(2);
+                GC.WaitForPendingFinalizers();
+                GC.Collect(0);
+                GC.WaitForPendingFinalizers();
+            }
+        }
+
         public static bool IsNotNumber(string? input)
         {
             // Biểu thức chính quy để kiểm tra chuỗi chỉ chứa số (cả số nguyên và số thực)

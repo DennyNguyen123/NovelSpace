@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -25,14 +26,23 @@ namespace NovelReader
     public static class WpfUtils
     {
 
-        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null, bool isHideMainWindows = true, bool isRunAsync = true, string? textColor = null, string? backgroudColor = null)
+        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null
+            , bool isHideMainWindows = true, bool isRunAsync = true
+            , bool isTopMost = false
+            , string? textColor = null, string? backgroudColor = null
+            )
         {
 
             SplashScreenWindow splash = new SplashScreenWindow();
-
+            splash.Topmost = isTopMost;
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
             splash.Background = ConvertHtmlColorToBrush(backgroudColor);
-            SetPositionCenterParent(splash, windows);
+            if (windows.IsLoaded)
+            {
+                splash.Owner = windows;
+            }
+
+            splash.SetPositionCenterParent(windows);
             splash.Show();
 
             if (isHideMainWindows)
@@ -47,7 +57,7 @@ namespace NovelReader
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
                     splash.Close(); // Đóng SplashScreen
-                    
+
                     doneAction?.Invoke();
                     if (isHideMainWindows)
                     {
@@ -135,12 +145,7 @@ namespace NovelReader
             return null;
         }
 
-        public static void ClearRAM()
-        {
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-        }
+
 
         public static Brush ConvertHtmlColorToBrush(string? htmlColor)
         {

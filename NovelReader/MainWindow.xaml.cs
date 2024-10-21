@@ -306,7 +306,7 @@ namespace NovelReader
                 //UpdateHightlightFirst();
                 _AppDbContext.CurrentReader.Update(_current_reader);
                 _AppDbContext.SaveChanges();
-                WpfUtils.ClearRAM();
+                //Utils.ClearRAM(false);
             }
             catch (Exception)
             {

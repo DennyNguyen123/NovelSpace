@@ -283,7 +283,6 @@ namespace DataSharedLibrary
 
                 novel.BookName = bookName;
                 novel.Author = bookAuthors;
-                novel.MaxChapterCount = chapters?.Count;
                 novel.BookId = Guid.NewGuid().ToString();
                 novel.Chapters = new List<ChapterContent>();
 
@@ -296,6 +295,7 @@ namespace DataSharedLibrary
                 {
                     chapters = chapters.FirstOrDefault()?.NestedItems;
                 }
+                novel.MaxChapterCount = chapters?.Count;
 
                 chapters?.ForEach(chapter =>
                 {
@@ -314,7 +314,10 @@ namespace DataSharedLibrary
                     var htmlDoc = new HtmlDocument();
                     htmlDoc.LoadHtml(chapter_content);
 
-                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerText;
+                    var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerHtml;
+
+                    body = body.Replace("<br>", "\r\n").Replace("<br/>", "\r\n").Replace("</p>", "\r\n").Replace("<p>", "");
+
 
                     var lstBody = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 
@@ -332,6 +335,7 @@ namespace DataSharedLibrary
                         contentChapter.ChapterId = novelChapter.ChapterId;
                         contentChapter.Id = Guid.NewGuid().ToString();
                         contentChapter.Content = content;
+                        contentChapter.Index = lstBody.IndexOf(content);
                         novelChapter.ChapterDetailContents.Add(contentChapter);
 
                     });

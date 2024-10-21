@@ -134,7 +134,7 @@ namespace NovelReader
                         }
                         else
                         {
-                            string existMsg = "Already exist - ";
+                            string existMsg = string.IsNullOrEmpty(msg) ? "" : "Already exist - ";
                             this.ShowYesNoMessageBox($"{existMsg}Do you want open this book", "Open Book?",
 
                                 yesAction: () =>
