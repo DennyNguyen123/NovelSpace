@@ -2,6 +2,7 @@
   "browserDevice": "iPhone 11",
   "delayTime": 200,
   "isHeadless": true,
+  "isFull": true,
   "maxThread": 20,
   "maxTrialGet": 20,
   "minContentLength": 1,
