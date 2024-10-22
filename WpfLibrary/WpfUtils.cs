@@ -1,5 +1,4 @@
-﻿using DataSharedLibrary;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +18,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using MessageBox = System.Windows.MessageBox;
 
-namespace NovelReader
+namespace WpfLibrary
 {
 
 

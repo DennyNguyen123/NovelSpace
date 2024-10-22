@@ -2,9 +2,10 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:NovelReader"
+             xmlns:wpflibrary="clr-namespace:WpfLibrary;assembly=WpfLibrary"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-        <local:Base64ToImageConverter x:Key="Base64ToImageConverter"/>
-        <local:MarginConverter x:Key="MarginConverter" />
+        <wpflibrary:Base64ToImageConverter x:Key="Base64ToImageConverter"/>
+        <wpflibrary:MarginConverter x:Key="MarginConverter" />
     </Application.Resources>
 </Application>

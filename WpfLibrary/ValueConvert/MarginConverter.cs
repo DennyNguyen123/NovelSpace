@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows;
 
-namespace NovelReader
+namespace WpfLibrary
 {
     public class MarginConverter : IValueConverter
     {

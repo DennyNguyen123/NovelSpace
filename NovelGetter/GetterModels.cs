@@ -9,31 +9,20 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using WpfLibrary;
 
-namespace NovelReader
+namespace NovelGetter
 {
-    public class AppConfig
+    public class GetterAppConfig
     {
         public string? FolderTemp { get; set; } = "./temp";
-        public string? CurrentBookId { get; set; }
-        public int FontSize { get; set; } = 14;
-        public string? VoiceName { get; set; }
-        public int VoiceRate { get; set; } = 0;
-        public int VoiceVolumn { get; set; } = 100;
-        public bool isShowInTaskBar { get; set; } = true;
-        public bool isRememberLocation { get; set; } = true;
 
-        public string? BackgroundColor { get; set; } = "#FFFFFF";
-        public string? TextColor { get; set; } = "#000000";
-        public string? CurrentTextColor { get; set; } = "#EBFA03";
-        public string? SelectedParagraphColor { get; set; } = "#FA5D03";
-        public double? LastWidth { get; set; } = 300;
-        public double? LastHeigh { get; set; } = 300;
-        public double? LastTop { get; set; } = 300;
-        public double? LastLeft { get; set; } = 300;
-        public double TextMargin { get; set; } = 30;
+        public string? PathBrowser { get; set; } = "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Google Chrome.lnk";
+        public bool IsHeadless { get; set; } = false;
+        public string? BrowserDevice { get; set; } = "iPhone 11";
+
+        public string? ListHostSavePath { get; set; } = "listhost.json";
         public string _sqlitepath { get => $"{this.FolderTemp}//data.db"; }
 
-        private string _savepath = "appconfig.json";
+        private string _savepath = "getterconfig.json";
 
 
         private JsonSerializerOptions jsonOption = new JsonSerializerOptions
@@ -46,8 +35,6 @@ namespace NovelReader
         {
             try
             {
-
-
                 var json = JsonSerializer.Serialize(this);
                 WpfUtils.ClearAndWriteToFile(_savepath, json);
             }
@@ -66,12 +53,34 @@ namespace NovelReader
             else
             {
                 var json = File.ReadAllText(_savepath);
-                var rs = JsonSerializer.Deserialize<AppConfig>(json);
+                var rs = JsonSerializer.Deserialize<GetterAppConfig>(json);
                 WpfUtils.UpdateValueSamePropName(this, rs);
 
             }
         }
 
+    }
+
+
+    public enum eGetChapterType
+    {
+        GetEndChapter,
+        MoveToLast,
+        MoveToFirst,
+        MoveToPageWithoutChapter
+    }
+
+    public class HostGetter
+    {
+        public string? Url { get; set; }
+        public eGetChapterType GetChapterType { get; set; }
+        public string? XPathListChapter { get; set; }
+        public string? XPathHeader { get; set; }
+        public string? XPathContent { get; set; }
+
+        public bool IsLogin { get; set; }
+        public string? UserName { get; set; }
+        public string? Password { get; set; }
     }
 
 }

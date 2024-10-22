@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace NovelReader
+namespace WpfLibrary
 {
     /// <summary>
     /// Interaction logic for SplashScreenWindow.xaml

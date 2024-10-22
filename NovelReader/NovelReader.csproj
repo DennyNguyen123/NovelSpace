@@ -19,6 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="fix_voice_VN.reg" />
     <None Remove="TTSvi-VN.rar" />
   </ItemGroup>
 
@@ -29,22 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.1" />
-    <PackageReference Include="FontAwesome.WPF" Version="4.7.0.9">
-      <NoWarn>NU1701</NoWarn>
-    </PackageReference>
-    <PackageReference Include="Hardcodet.NotifyIcon.Wpf" Version="2.0.0" />
-    <PackageReference Include="System.Speech" Version="8.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\DataSharedLibrary\DataSharedLibrary.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="TTSvi-VN.rar">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
+    <ProjectReference Include="..\DataSharedLibrary\0.0 DataSharedLibrary.csproj" />
+    <ProjectReference Include="..\WpfLibrary\0.0 WpfLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

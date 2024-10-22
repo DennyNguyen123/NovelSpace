@@ -4,7 +4,7 @@ using System.IO;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
-namespace NovelReader
+namespace WpfLibrary
 {
     public class Base64ToImageConverter : IValueConverter
     {

@@ -15,6 +15,7 @@ using System.Data.Entity;
 using System.IO;
 using System.Text.Json;
 using MessageBox = System.Windows.MessageBox; // Thêm thư viện Drawing để dùng Icon
+using WpfLibrary;
 
 namespace NovelReader
 {
@@ -75,7 +76,7 @@ namespace NovelReader
             get; set;
         }
 
-        //public List<(string novelId, int chapId, int lineId, int posId)> LstPrevChap { get; set; } = new List<(string novelId, int chapId, int lineId, int posId)>()
+        public List<(string? novelId, int? chapId, int? lineId, int? posId)> LstPrevChap { get; set; } = new List<(string? novelId, int? chapId, int? lineId, int? posId)>();
 
         #endregion Property
 
@@ -316,6 +317,29 @@ namespace NovelReader
             }
         }
 
+
+        private void WritePrevChap()
+        {
+            var bookId = _current_reader.BookId;
+            var chapterId = _current_reader.CurrentChapter;
+            var lineId = _current_reader.CurrentLine;
+            var posId = _current_reader.CurrentPosition;
+
+
+            var curLine = LstPrevChap.Where(x => x.novelId == bookId && x.chapId == chapterId).FirstOrDefault();
+
+            if (curLine != default)
+            {
+                curLine.lineId = lineId;
+                curLine.posId = posId;
+            }
+            else
+            {
+                LstPrevChap.Add((bookId, chapterId, lineId, posId));
+            }
+
+
+        }
 
         public void EndOfBook()
         {
