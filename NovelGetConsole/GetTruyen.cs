@@ -78,8 +78,6 @@ namespace GetTruyen
         public GetTruyen()
         {
 
-
-
             string conf = System.IO.File.ReadAllText(_config_path);
             if (string.IsNullOrEmpty(conf))
             {
@@ -101,8 +99,11 @@ namespace GetTruyen
 
         }
 
-        public async Task<bool?> FirstLoad()
+        public async Task<bool?> InitBrowser()
         {
+            Utils.ConsoleUTF8();
+            Console.WriteLine("Loading...");
+
             // Khởi tạo Playwright và trình duyệt Chromium
             _playwright = await Playwright.CreateAsync();
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
@@ -126,14 +127,7 @@ namespace GetTruyen
                 IsMobile = true // Emulate mobile device
             });
 
-            //// Read cookies from file
-            //string cookiesJson = System.IO.File.ReadAllText("cookies.json");
-            //var cookies = JsonSerializer.Deserialize<List<Microsoft.Playwright.Cookie>>(cookiesJson);
-
-            //if (_browserContext != null)
-            //{
-            //    await _browserContext.AddCookiesAsync(cookies);
-            //}
+            Console.Clear();
 
             return true;
         }
@@ -319,12 +313,6 @@ namespace GetTruyen
         }
 
 
-        public async Task<string> GetBody(IPage? page)
-        {
-            var str = await page?.TextContentAsync("xpath=//body");
-            return string.IsNullOrEmpty(str) ? string.Empty : str;
-        }
-
         public async Task GetFullNovelByCat(string? cateId)
         {
 
@@ -339,8 +327,22 @@ namespace GetTruyen
                 return;
             }
 
+            var results = await GetNovelsFromJson(await response.TextAsync());
 
-            var json = JObject.Parse(await response.TextAsync());
+
+            var jsonOut = JsonSerializer.Serialize(results);
+
+            string fileName = $"{_config.outputPath}//list-novel.json";
+
+            await File.WriteAllTextAsync(fileName, jsonOut);
+
+
+        }
+
+
+        public async Task<List<NovelContent>?> GetNovelsFromJson(string input)
+        {
+            var json = JObject.Parse(input);
 
             var results = json?["data"]?["list"]?
             .Where(p => (bool?)p?["isFull"] ?? false == true)
@@ -356,17 +358,21 @@ namespace GetTruyen
                 ImageBase64 = (string?)p?["image"],
             })?.ToList();
 
+            if (results == null)
+            {
+                return null;
+            }
 
             //Get Chapter
             foreach (var item in results)
             {
                 //Get chapters
-                var urlAllChapter = $"{host}/chapters/{item.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
+                var urlAllChapter = $"{_config.HostAPI}/chapters/{item.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
                 var req = await _apiContext.GetAsync(urlAllChapter);
 
                 if (!req.Ok)
                 {
-                    return;
+                    continue;
                 }
 
                 var jsonAllChapter = JObject.Parse(await req.TextAsync());
@@ -387,6 +393,26 @@ namespace GetTruyen
 
             }
 
+            return results;
+        }
+
+
+        public async Task GetFullNovel(bool isFull = true)
+        {
+
+            string web = $"{_config.HostAPI}/novels?isFull={(isFull ? "true" : "false")}&page=1&limit=9999999";
+
+
+            var response = await _apiContext.GetAsync(web);
+
+            if (!response.Ok)
+            {
+                return;
+            }
+
+            var results = await GetNovelsFromJson(await response.TextAsync());
+
+
             var jsonOut = JsonSerializer.Serialize(results);
 
             string fileName = $"{_config.outputPath}//list-novel.json";
@@ -397,11 +423,11 @@ namespace GetTruyen
         }
 
 
-        public async Task GetContentDetail(ChapterContent chap, string? bookSlug,int? maxChap = 0, int trial = 0, string? reTitle = "")
+        public async Task GetContentDetail(ChapterContent chap, string? bookSlug, int? maxChap = 0, int trial = 0, string? reTitle = "")
         {
             try
             {
-                
+
 
                 var link = $"{_config.HostWeb}/{bookSlug}/{chap.Slug}";
                 var tab = await NewPage(link);
@@ -432,58 +458,84 @@ namespace GetTruyen
 
 
 
-        public async Task GetContentByList()
+        public async Task GetContentByList(int trial = 0)
         {
-            Utils.ConsoleUTF8();
-
-            var filePath = $"{_config.outputPath}//list-novel.json";
-
-            var lstNovel = JsonSerializer.Deserialize<List<NovelContent>>(await File.ReadAllTextAsync(filePath));
-
-
-
-            await LoginFirst();
-
-            if (lstNovel != null)
+            try
             {
-                foreach (var novel in lstNovel)
+
+                var filePath = $"{_config.outputPath}//list-novel.json";
+
+                var lstNovel = new List<NovelContent>();
+
+                try
                 {
-                    if (novel != null)
-                    {
-                        novel.MaxChapterCount = novel?.Chapters?.Count ?? 0;
-                        string reTitle = $"{lstNovel?.IndexOf(novel)}/{lstNovel?.Count}";
-                        Console.WriteLine($"[{reTitle}] Get novel: {novel?.BookName} - {novel?.MaxChapterCount} chapters");
-                        var fileName = $"{_config.outputPath}\\{novel?.Slug}.novel";
-
-                        if (File.Exists(fileName))
-                        {
-                            Console.WriteLine($"[{reTitle}] Already exist {fileName} - Skipped");
-                            continue;
-                        }
-
-                        novel.ImageBase64 = await Utils.DownloadImageAsBase64(novel?.ImageBase64);
-
-                        await Parallel.ForEachAsync(novel.Chapters, async (chapter, cancellationToken) =>
-                        {
-                            await GetContentDetail(chapter, novel.Slug, maxChap : novel?.MaxChapterCount, reTitle: reTitle);
-                        });
-
-                        var json = JsonSerializer.Serialize(novel);
-
-                        var compress = Utils.GZipCompressText(json);
-
-                        await File.WriteAllTextAsync(fileName, compress);
-                    }
-
+                    lstNovel = JsonSerializer.Deserialize<List<NovelContent>>(await File.ReadAllTextAsync(filePath));
+                }
+                catch (Exception)
+                {
+                    Console.WriteLine("Not found file list-novel.json. Get again!");
+                    await GetFullNovel(true);
                 }
 
+
+                if (lstNovel == null)
+                {
+                    return;
+                }
+
+
+                await LoginFirst();
+
+                foreach (var novel in lstNovel)
+                {
+                    if (novel == null)
+                    {
+                        continue;
+                    }
+
+                    string reTitle = $"{lstNovel?.IndexOf(novel) + 1}/{lstNovel?.Count}";
+                    var fileName = $"{_config.outputPath}\\{novel?.Slug}.novel";
+                    novel.MaxChapterCount = novel.MaxChapterCount ?? novel?.Chapters?.Count ?? 0;
+
+                    if (File.Exists(fileName))
+                    {
+                        Console.WriteLine($"[{reTitle}] Already exist {fileName} - Skipped");
+                        continue;
+                    }
+
+                    Console.WriteLine($"[{reTitle}] Get novel: {novel?.BookName} - {novel?.MaxChapterCount} chapters");
+
+                    novel.ImageBase64 = await Utils.DownloadImageAsBase64(novel?.ImageBase64);
+
+
+                    var parallelOptions = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = Math.Min(_config.maxThread, Environment.ProcessorCount)
+                    };
+
+                    await Parallel.ForEachAsync(novel.Chapters, parallelOptions, async (chapter, cancellationToken) =>
+                    {
+                        await GetContentDetail(chapter, novel.Slug, maxChap: novel?.MaxChapterCount, reTitle: reTitle);
+                    });
+
+                    var json = JsonSerializer.Serialize(novel);
+
+                    var compress = Utils.GZipCompressText(json);
+
+                    await File.WriteAllTextAsync(fileName, compress);
+                }
+
+
             }
-
-
-
-
-
-
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                if (trial <= _config.maxTrialGet)
+                {
+                    Console.WriteLine("Restarted");
+                    await GetContentByList(trial++);
+                }
+            }
         }
 
 
