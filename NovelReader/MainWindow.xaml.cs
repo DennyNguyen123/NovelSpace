@@ -75,6 +75,8 @@ namespace NovelReader
             get; set;
         }
 
+        //public List<(string novelId, int chapId, int lineId, int posId)> LstPrevChap { get; set; } = new List<(string novelId, int chapId, int lineId, int posId)>()
+
         #endregion Property
 
         public MainWindow()

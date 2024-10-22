@@ -69,7 +69,6 @@ namespace NovelReader
                 WpfUtils.UpdateValueSamePropName(this, rs);
 
             }
-
         }
 
     }
