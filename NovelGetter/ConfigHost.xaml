@@ -7,6 +7,27 @@
         mc:Ignorable="d"
         Title="ConfigHost" Height="450" Width="800">
     <Grid>
-        
+        <TabControl>
+            <!-- First Tab -->
+            <TabItem Header="Tab 1">
+                <Grid>
+                    <TextBlock Text="This is the content of Tab 1" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Grid>
+            </TabItem>
+
+            <!-- Second Tab -->
+            <TabItem Header="Tab 2">
+                <Grid>
+                    <TextBlock Text="This is the content of Tab 2" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Grid>
+            </TabItem>
+
+            <!-- Third Tab -->
+            <TabItem Header="Tab 3">
+                <Grid>
+                    <TextBlock Text="This is the content of Tab 3" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                </Grid>
+            </TabItem>
+        </TabControl>
     </Grid>
 </Window>

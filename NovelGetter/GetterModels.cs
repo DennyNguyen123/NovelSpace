@@ -44,19 +44,21 @@ namespace NovelGetter
             }
         }
 
-        public void Get()
+        public static GetterAppConfig? Get()
         {
-            if (!File.Exists(_savepath))
+            var rs = new GetterAppConfig();
+            var path = rs._savepath;
+
+            if (!File.Exists(path))
             {
-                WpfUtils.ClearAndWriteToFile(_savepath, JsonSerializer.Serialize(this));
+                WpfUtils.ClearAndWriteToFile(path, JsonSerializer.Serialize(rs));
             }
             else
             {
-                var json = File.ReadAllText(_savepath);
-                var rs = JsonSerializer.Deserialize<GetterAppConfig>(json);
-                WpfUtils.UpdateValueSamePropName(this, rs);
-
+                var json = File.ReadAllText(path);
+                rs = JsonSerializer.Deserialize<GetterAppConfig>(json);
             }
+            return rs;
         }
 
     }
@@ -81,6 +83,25 @@ namespace NovelGetter
         public bool IsLogin { get; set; }
         public string? UserName { get; set; }
         public string? Password { get; set; }
+
+
+        public static List<HostGetter>? GetList(string? filepath)
+        {
+            filepath = filepath ?? string.Empty;
+            var model = new List<HostGetter>();
+
+            if (!File.Exists(filepath))
+            {
+                WpfUtils.ClearAndWriteToFile(filepath, JsonSerializer.Serialize(model));
+            }
+            else
+            {
+                var json = File.ReadAllText(filepath);
+                model = JsonSerializer.Deserialize<List<HostGetter>>(json);
+
+            }
+            return model;
+        }
     }
 
 }

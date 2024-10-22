@@ -19,12 +19,14 @@ namespace NovelGetter
     public partial class GetterMainWindow : Window
     {
 
-        protected IPlaywright? _playwright;
-        protected IBrowser? _browser;
-        protected IBrowserContext? _browserContext;
-        protected PageGotoOptions? _pageGotoOption;
+        public IPlaywright? _playwright;
+        public IBrowser? _browser;
+        public IBrowserContext? _browserContext;
+        public PageGotoOptions? _pageGotoOption;
 
-        protected GetterAppConfig? _getterAppConfig;
+        public GetterAppConfig? _getterAppConfig;
+
+        public List<HostGetter>? _lstHostGetter;
 
         public GetterMainWindow()
         {
@@ -32,8 +34,8 @@ namespace NovelGetter
 
             this.RunTaskWithSplash(() =>
             {
-                _getterAppConfig = new GetterAppConfig();
-                _getterAppConfig.Get();
+                _getterAppConfig = GetterAppConfig.Get();
+                _lstHostGetter = HostGetter.GetList(_getterAppConfig?.ListHostSavePath);
                 FirstLoad().GetAwaiter().GetResult();
 
             });
