@@ -1,15 +1,17 @@
 {
   "browserDevice": "iPhone 11",
   "delayTime": 200,
-  "isHeadless": false,
+  "isHeadless": true,
   "maxThread": 20,
-  "maxTrialGet": 999,
+  "maxTrialGet": 15,
   "minContentLength": 1,
-  "outputPath": "D:\\Truyen\\JSON\\TEST",
+  "outputPath": "D:\\OneDrive - Beetech Solution\\Truyen\\NOVEL",
   "epubOutputPath": "D:\\Truyen\\JSON\\docfull.org",
   "pathBrowser": "C:\\Users\\nguye\\AppData\\Local\\CentBrowser\\Application\\chrome.exe",
   "pwdGet": "Thanh2123",
   "usrGet": "nguyenliemthanh.dev@gmail.com",
   "timeOut": 3000,
-  "logPath": "logs"
+  "logPath": "logs",
+  "HostWeb": "https://docfull.vn",
+  "HostAPI": "https://api.docfull.vn/api/v1"
 }

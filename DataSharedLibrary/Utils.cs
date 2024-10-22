@@ -158,8 +158,13 @@ namespace DataSharedLibrary
         }
 
 
-        public static async Task<string> DownloadImageAsBase64(string imageUrl)
+        public static async Task<string?> DownloadImageAsBase64(string? imageUrl)
         {
+            if (string.IsNullOrEmpty(imageUrl))
+            {
+                return default;
+            }
+
             using (HttpClient client = new HttpClient())
             {
                 try
@@ -229,6 +234,13 @@ namespace DataSharedLibrary
                 return null;
             }
 
+        }
+
+
+        public static void ConsoleUTF8()
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.InputEncoding = Encoding.UTF8;
         }
 
         public static void WriteAtLast(FileStream? fileStream, string msg)

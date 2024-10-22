@@ -101,7 +101,7 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId)
+        public static async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId)
         {
             var rs = new List<ChapterDetailContent>();
 
