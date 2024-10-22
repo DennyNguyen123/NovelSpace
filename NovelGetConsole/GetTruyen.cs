@@ -49,6 +49,7 @@ namespace GetTruyen
         public string? pathBrowser { get; set; }
         public string? logPath { get; set; }
         public bool? isHeadless { get; set; }
+        public bool? isFull { get; set; }
         public string? browserDevice { get; set; }
         public int delayTime { get; set; } = 200;
         public string? usrGet { get; set; }
@@ -474,7 +475,7 @@ namespace GetTruyen
                 catch (Exception)
                 {
                     Console.WriteLine("Not found file list-novel.json. Get again!");
-                    await GetFullNovel(true);
+                    await GetFullNovel(_config?.isFull??true);
                 }
 
 
@@ -494,7 +495,7 @@ namespace GetTruyen
                     }
 
                     string reTitle = $"{lstNovel?.IndexOf(novel) + 1}/{lstNovel?.Count}";
-                    var fileName = $"{_config.outputPath}\\{novel?.Slug}.novel";
+                    var fileName = $"{_config?.outputPath}\\{novel?.Slug}.novel";
                     novel.MaxChapterCount = novel.MaxChapterCount ?? novel?.Chapters?.Count ?? 0;
 
                     if (File.Exists(fileName))
@@ -510,7 +511,7 @@ namespace GetTruyen
 
                     var parallelOptions = new ParallelOptions
                     {
-                        MaxDegreeOfParallelism = Math.Min(_config.maxThread, Environment.ProcessorCount)
+                        MaxDegreeOfParallelism =_config.maxThread
                     };
 
                     await Parallel.ForEachAsync(novel.Chapters, parallelOptions, async (chapter, cancellationToken) =>
