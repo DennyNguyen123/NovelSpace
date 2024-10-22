@@ -519,6 +519,12 @@ namespace GetTruyen
                         await GetContentDetail(chapter, novel.Slug, maxChap: novel?.MaxChapterCount, reTitle: reTitle);
                     });
 
+                    if (novel?.Chapters?.Any(x=>x?.ChapterDetailContents?.Count() == 0)??true)
+                    {
+                        Console.WriteLine($"[{reTitle}] Some chapter is missing - Skip save");
+                        continue;
+                    }
+
                     var json = JsonSerializer.Serialize(novel);
 
                     var compress = Utils.GZipCompressText(json);
