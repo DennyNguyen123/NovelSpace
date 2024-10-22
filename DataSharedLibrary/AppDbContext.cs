@@ -101,17 +101,42 @@ namespace DataSharedLibrary
         }
 
 
+        public async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId)
+        {
+            var rs = new List<ChapterDetailContent>();
+
+            content = content?.Replace("<br>", "\r\n").Replace("<br/>", "\r\n").Replace("</p>", "\r\n").Replace("<p>", "");
+
+
+            var lstBody = content?.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+
+            if (lstBody?.Count < 2)
+            {
+                var separatestring = new string[] { ". ", "? ", "! " };
+                lstBody = content?.Split(separatestring, StringSplitOptions.RemoveEmptyEntries).ToList();
+            }
+
+
+            lstBody?.ForEach(content =>
+            {
+                var contentChapter = new ChapterDetailContent();
+                contentChapter.BookId = bookId;
+                contentChapter.ChapterId = chapterId;
+                contentChapter.Id = Guid.NewGuid().ToString();
+                contentChapter.Content = content;
+                contentChapter.Index = lstBody.IndexOf(content);
+                rs.Add(contentChapter);
+
+            });
+
+            return rs;
+        }
+
         public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename)
         {
             IDbContextTransaction? transaction = null;
             try
             {
-
-
-                transaction = await this.Database.BeginTransactionAsync();
-                //using FileStream stream = File.OpenRead(filename);
-                //NovelContent? novelContent = null;
-                //novelContent = await JsonSerializer.DeserializeAsync<NovelContent?>(stream);
 
                 var novelContent = Utils.JsonFromCompress<NovelContent?>(filename);
                 if (novelContent != null)
@@ -123,55 +148,53 @@ namespace DataSharedLibrary
                         return (checkExist.bookId, checkExist.msg);
                     }
 
-                    var newNovel = new NovelContent();
-                    newNovel.Title = novelContent?.Title;
-                    newNovel.URL = novelContent?.URL;
-                    newNovel.Author = novelContent?.Author;
-                    newNovel.BookId = novelContent?.BookId ?? Guid.NewGuid().ToString();
-                    newNovel.MaxChapterCount = novelContent?.MaxChapterCount;
-                    newNovel.BookName = novelContent?.BookName;
-                    newNovel.ImageBase64 = novelContent?.ImageBase64;
+                    //var newNovel = new NovelContent();
+                    //newNovel.Title = novelContent?.Title;
+                    //newNovel.URL = novelContent?.URL;
+                    //newNovel.Author = novelContent?.Author;
+                    //newNovel.BookId = novelContent?.BookId ?? Guid.NewGuid().ToString();
+                    //newNovel.MaxChapterCount = novelContent?.MaxChapterCount;
+                    //newNovel.BookName = novelContent?.BookName;
+                    //newNovel.ImageBase64 = novelContent?.ImageBase64;
 
 
-                    var lstChapter = new List<ChapterContent>();
-                    var lstChapterDetail = new List<ChapterDetailContent>();
-                    novelContent?.Chapters?.ForEach(chapter =>
-                    {
-                        var newChap = new ChapterContent();
-                        newChap.Title = chapter.Title;
-                        newChap.IndexChapter = novelContent.Chapters.IndexOf(chapter);
-                        newChap.URL = chapter.URL;
-                        newChap.BookId = newNovel.BookId;
-                        newChap.ChapterId = chapter.ChapterId ?? Guid.NewGuid().ToString();
-                        lstChapter.Add(newChap);
+                    //var lstChapter = new List<ChapterContent>();
+                    //var lstChapterDetail = new List<ChapterDetailContent>();
+                    //novelContent?.Chapters?.ForEach(chapter =>
+                    //{
+                    //    var newChap = new ChapterContent();
+                    //    newChap.Title = chapter.Title;
+                    //    newChap.IndexChapter = novelContent.Chapters.IndexOf(chapter);
+                    //    newChap.URL = chapter.URL;
+                    //    newChap.BookId = newNovel.BookId;
+                    //    newChap.ChapterId = chapter.ChapterId ?? Guid.NewGuid().ToString();
+                    //    lstChapter.Add(newChap);
 
-                        chapter?.Content?.ForEach(con =>
-                        {
-                            var content = new ChapterDetailContent();
-                            content.Id = Guid.NewGuid().ToString();
-                            content.ChapterId = newChap.ChapterId;
-                            content.BookId = newNovel.BookId;
-                            content.Content = con;
-                            content.Index = chapter.Content.IndexOf(con);
-                            lstChapterDetail.Add(content);
-                        });
+                    //    chapter?.Content?.ForEach(con =>
+                    //    {
+                    //        var content = new ChapterDetailContent();
+                    //        content.Id = Guid.NewGuid().ToString();
+                    //        content.ChapterId = newChap.ChapterId;
+                    //        content.BookId = newNovel.BookId;
+                    //        content.Content = con;
+                    //        content.Index = chapter.Content.IndexOf(con);
+                    //        lstChapterDetail.Add(content);
+                    //    });
 
-                    });
+                    //});
 
-                    await this.NovelContents.AddRangeAsync(newNovel);
-                    await this.ChapterContents.AddRangeAsync(lstChapter);
-                    await this.ChapterDetailContents.AddRangeAsync(lstChapterDetail);
 
-                    await transaction.CommitAsync();
+                    await this.NovelContents.AddAsync(novelContent);
                     await this.SaveChangesAsync();
-                    return (newNovel.BookId, null);
+
+                    return (novelContent?.BookId, null);
 
                 }
             }
             catch (Exception ex)
             {
-                transaction?.Rollback();
-                await this.SaveChangesAsync();
+                //transaction?.Rollback();
+                //await this.SaveChangesAsync();
                 return (null, ex.Message);
             }
             return (null, null);
@@ -297,7 +320,7 @@ namespace DataSharedLibrary
                 }
                 novel.MaxChapterCount = chapters?.Count;
 
-                chapters?.ForEach(chapter =>
+                chapters?.ForEach(async chapter =>
                 {
                     var novelChapter = new ChapterContent();
                     var index = chapters.IndexOf(chapter);
@@ -316,29 +339,7 @@ namespace DataSharedLibrary
 
                     var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerHtml;
 
-                    body = body.Replace("<br>", "\r\n").Replace("<br/>", "\r\n").Replace("</p>", "\r\n").Replace("<p>", "");
-
-
-                    var lstBody = body.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-
-                    if (lstBody?.Count < 2)
-                    {
-                        var separatestring = new string[] { ". ", "? ", "! " };
-                        lstBody = body.Split(separatestring, StringSplitOptions.RemoveEmptyEntries).ToList();
-                    }
-
-
-                    lstBody?.ForEach(content =>
-                    {
-                        var contentChapter = new ChapterDetailContent();
-                        contentChapter.BookId = novel.BookId;
-                        contentChapter.ChapterId = novelChapter.ChapterId;
-                        contentChapter.Id = Guid.NewGuid().ToString();
-                        contentChapter.Content = content;
-                        contentChapter.Index = lstBody.IndexOf(content);
-                        novelChapter.ChapterDetailContents.Add(contentChapter);
-
-                    });
+                    novelChapter.ChapterDetailContents = await GenerateChapterContent(body, novelChapter.BookId, novelChapter.ChapterId);
 
                     novel.Chapters.Add(novelChapter);
 
