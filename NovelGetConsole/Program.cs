@@ -162,23 +162,24 @@ namespace GetTruyen
         {
             //await MenuCommand();
 
-            //var getTruyen = new GetTruyen();
-            //Console.WriteLine("Loading...");
-            //var isLoad = await getTruyen.FirstLoad();
+            var getTruyen = new GetTruyen();
+            Console.WriteLine("Loading...");
+            var isLoad = await getTruyen.FirstLoad();
 
-            //if (isLoad ?? false == true)
-            //{
-            //    //await getTruyen.FixAndImport();
-            //    await getTruyen.CompressFiles();
-            //}
-
-
-
-            var test = new Test();
-            await test.TestForeachMultiThread();
+            if (isLoad ?? false == true)
+            {
+                //await getTruyen.FixAndImport();
+                //await getTruyen.CompressFiles();
+                await getTruyen.GetFullNovelByCat("648003adef3447057449cb27");
+            }
 
 
-            Console.WriteLine("Done");
+
+            //var test = new Test();
+            //await test.TestForeachMultiThread();
+
+
+            //Console.WriteLine("Done");
 
 
             Console.ReadKey();

@@ -30,8 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataSharedLibrary\0.0 DataSharedLibrary.csproj" />
-    <ProjectReference Include="..\WpfLibrary\0.0 WpfLibrary.csproj" />
+    <ProjectReference Include="..\DataSharedLibrary\DataSharedLibrary.csproj" />
+    <ProjectReference Include="..\WpfLibrary\WpfLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

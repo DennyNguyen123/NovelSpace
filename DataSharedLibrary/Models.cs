@@ -31,8 +31,12 @@ namespace DataSharedLibrary
         public string? Title { get; set; }
         public string? ImageBase64 { get; set; }
         public string? BookName { get; set; }
+        public string? Description { get; set; }
+        public string? ShortDesc { get; set; }
+        public List<string?>? Tags { get; set; } = new List<string?>();
         public string? Author { get; set; }
         public string? URL { get; set; }
+        public string? Slug { get; set; }
         public int? MaxChapterCount { get; set; }
 
         // Mối quan hệ một-nhiều với ChapterContent
@@ -48,6 +52,8 @@ namespace DataSharedLibrary
     {
         [Key] // Khóa chính
         public string? ChapterId { get; set; }
+
+        public string? Slug { get; set; }
 
         [ForeignKey(nameof(NovelContent))] // Khóa phụ tham chiếu đến NovelContent
         public string? BookId { get; set; }

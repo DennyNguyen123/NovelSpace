@@ -6,7 +6,9 @@ using System.Net.Http;
 using System.Reflection.Metadata;
 using System.Security.Policy;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using DataSharedLibrary;
 using Flurl;
@@ -14,7 +16,10 @@ using Flurl.Http;
 using GetTruyen;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using QuickEPUB;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace GetTruyen
 {
@@ -56,6 +61,9 @@ namespace GetTruyen
         protected IPlaywright? _playwright;
         protected IBrowser _browser;
         protected IBrowserContext _browserContext;
+        protected IAPIRequestContext _apiContext;
+
+
         protected PageGotoOptions _pageGotoOption;
 
         protected bool isLogin = false;
@@ -66,16 +74,19 @@ namespace GetTruyen
 
         public GetTruyen()
         {
+
+
+
             string conf = System.IO.File.ReadAllText(_config_path);
             if (string.IsNullOrEmpty(conf))
             {
                 var config = new AppConfig();
-                File.WriteAllText(_config_path, JsonSerializer.Serialize(config));
+                File.WriteAllText(_config_path, System.Text.Json.JsonSerializer.Serialize(config));
                 _config = config;
             }
             else
             {
-                var config = JsonSerializer.Deserialize<AppConfig>(conf);
+                var config = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(conf);
                 _config = config;
             }
 
@@ -96,7 +107,7 @@ namespace GetTruyen
                 ExecutablePath = _config.pathBrowser,
                 Headless = _config.isHeadless // Chạy chế độ headless
             });
-
+            _apiContext = await _playwright.APIRequest.NewContextAsync();
 
 
             // Define mobile emulation settings (e.g., for an iPhone 11)
@@ -139,6 +150,7 @@ namespace GetTruyen
             }
             return page;
         }
+
 
 
         private async Task Login(IPage page, string? returnUrl, int trialCount = 0)
@@ -351,7 +363,7 @@ namespace GetTruyen
             if (rs != null)
             {
                 var jsonfilename = $"{_config.outputPath}\\{url.Split("/").LastOrDefault()}.json";
-                var json = JsonSerializer.Serialize(rs);
+                var json = System.Text.Json.JsonSerializer.Serialize(rs);
                 await System.IO.File.WriteAllTextAsync(jsonfilename, json);
                 return jsonfilename;
             }
@@ -1060,6 +1072,85 @@ namespace GetTruyen
             {
                 dbContext?.Dispose();
             }
+        }
+
+
+
+        public async Task<string> GetBody(IPage? page)
+        {
+            var str = await page?.TextContentAsync("xpath=//body");
+            return string.IsNullOrEmpty(str) ? string.Empty : str;
+        }
+
+        public async Task GetFullNovelByCat(string? cateId)
+        {
+
+            string host = "https://api.docfull.vn/api/v1";
+            string web = $"{host}/novels/categoies/{cateId}?page=1&limit=9999999";
+
+
+            var response = await _apiContext.GetAsync(web);
+
+            if (!response.Ok)
+            {
+                return;
+            }
+
+
+            var json = JObject.Parse(await response.TextAsync());
+
+            var results = json?["data"]?["list"]?
+            .Where(p => (bool?)p?["isFull"] ?? false == true)
+            .Select(p => new NovelContent()
+            {
+                BookId = (string?)p["id"],
+                BookName = (string?)p["name"],
+                Slug = (string?)p?["slug"],
+                Author = (string?)p?["maker"],
+                Tags = p?["categories"]?.Select(r => (string?)r?["name"])?.ToList(),
+                Description = (string?)p?["description"],
+                ShortDesc = (string?)p?["shortDescription"],
+                ImageBase64 = (string?)p?["image"],
+            })?.ToList();
+
+
+            //Get Chapter
+            foreach (var item in results)
+            {
+                //Get chapters
+                var urlAllChapter = $"{host}/chapters/{item.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
+                var req = await _apiContext.GetAsync(urlAllChapter);
+
+                if (!req.Ok)
+                {
+                    return;
+                }
+
+                var jsonAllChapter = JObject.Parse(await req.TextAsync());
+
+                var allChapter = jsonAllChapter?["data"]?["list"]?
+                .Select(x =>
+                new ChapterContent()
+                {
+                    ChapterId = (string?)x?["_id"],
+                    Title = (string?)x?["name"],
+                    IndexChapter = (int?)x?["chapterNumber"],
+                    Slug = (string?)x?["chapterString"],
+                    BookId = item.BookId,
+                });
+
+
+                item.Chapters = allChapter?.OrderBy(x => x.IndexChapter).ToList();
+
+            }
+
+            var jsonOut = JsonSerializer.Serialize(results);
+
+            string fileName = $"{_config.outputPath}//list-novel.json";
+
+            await File.WriteAllTextAsync(fileName, jsonOut);
+
+
         }
 
     }

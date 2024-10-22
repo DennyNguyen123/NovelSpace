@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataSharedLibrary\0.0 DataSharedLibrary.csproj" />
+    <ProjectReference Include="..\DataSharedLibrary\DataSharedLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>
