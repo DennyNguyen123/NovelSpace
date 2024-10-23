@@ -233,7 +233,7 @@ namespace GetTruyen
             var json = JObject.Parse(input);
 
             var results = json?["data"]?["list"]?
-            .Where(p => (bool?)p?["isFull"] ?? false == true)
+            //.Where(p => (bool?)p?["isFull"] ?? false == true)
             .Select(p => new NovelContent()
             {
                 BookId = (string?)p["id"],
