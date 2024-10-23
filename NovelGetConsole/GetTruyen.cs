@@ -118,7 +118,7 @@ namespace GetTruyen
             Utils.CreateFolderIfNotExist(_config?.logPath);
 
 
-            var logFileName = $"{_config?.logPath??"."}/{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.log";
+            var logFileName = $"{_config?.logPath ?? "."}/{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.log";
             _log = new LogWithConsole(logFileName);
 
             _pageGotoOption = new PageGotoOptions() { WaitUntil = WaitUntilState.NetworkIdle, Timeout = _config?.timeOut ?? 3000 };
@@ -244,6 +244,7 @@ namespace GetTruyen
                 Description = (string?)p?["description"],
                 ShortDesc = (string?)p?["shortDescription"],
                 ImageBase64 = (string?)p?["image"],
+                MaxChapterCount = (int?)p?["chapters"]?["chapterNumber"]
             })?.ToList();
 
 
@@ -279,7 +280,7 @@ namespace GetTruyen
 
 
                 novel.Chapters = allChapter?.OrderBy(x => x.IndexChapter).ToList();
-                novel.MaxChapterCount = novel?.Chapters?.Count;
+                novel.MaxChapterCount = novel?.MaxChapterCount ?? novel?.Chapters?.Count;
             }
             catch (Exception ex)
             {
@@ -394,12 +395,15 @@ namespace GetTruyen
 
                 try
                 {
+                    await _log.WriteLog($"Loading novels...");
                     lstNovel = JsonSerializer.Deserialize<List<NovelContent>>(await File.ReadAllTextAsync(filePath));
+                    await _log.WriteLog($"Loaded novels.");
                 }
                 catch (Exception)
                 {
                     await _log.WriteLog("Not found file list-novel.json. Get again!");
                     lstNovel = await GetFullNovel();
+                    await _log.WriteLog($"Loaded novels.");
                 }
 
 
@@ -437,12 +441,12 @@ namespace GetTruyen
 
                     var parallelOptions = new ParallelOptions
                     {
-                        MaxDegreeOfParallelism = _config.maxThread
+                        MaxDegreeOfParallelism = _config?.maxThread ?? 5
                     };
 
-                    await Parallel.ForEachAsync(novel.Chapters, parallelOptions, async (chapter, cancellationToken) =>
+                    await Parallel.ForEachAsync(novel?.Chapters, parallelOptions, async (chapter, cancellationToken) =>
                     {
-                        await GetContentDetail(chapter, novel.Slug, maxChap: novel?.MaxChapterCount, reTitle: reTitle);
+                        await GetContentDetail(chapter, novel?.Slug, maxChap: novel?.MaxChapterCount, reTitle: reTitle);
                     });
 
                     if (novel?.Chapters?.Any(x => x?.ChapterDetailContents?.Count() == 0) ?? true)
