@@ -275,7 +275,7 @@ namespace NovelReader
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
 
-                this.Novel = _AppDbContext.GetNovel(bookId).GetAwaiter().GetResult();
+                this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
                 _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
             }
@@ -301,14 +301,21 @@ namespace NovelReader
                 {
                     this.SelectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                 }
-                NumChapterGoto.DefaultValue = _current_reader.CurrentChapter;
+                NumChapterGoto.Value = _current_reader.CurrentChapter;
                 lstContent.SelectedIndex = _current_reader.CurrentLine;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
+
                 ContinueSpeech();
                 //UpdateHightlightFirst();
                 _AppDbContext.CurrentReader.Update(_current_reader);
                 _AppDbContext.SaveChanges();
+
+
+                //Update Title App
+                this.Title = $"[{SelectedChapter.IndexChapter}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
+
+
                 //Utils.ClearRAM(false);
             }
             catch (Exception)

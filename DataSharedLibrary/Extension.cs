@@ -84,6 +84,12 @@ namespace DataSharedLibrary
             return htmlRegex.IsMatch(input);
         }
 
+
+        public static string? ReplaceRegex(this string input, string pattern, string replaceString)
+        {
+            return Regex.Replace(input, pattern, replaceString).Trim();
+        }
+
     }
 
 }
