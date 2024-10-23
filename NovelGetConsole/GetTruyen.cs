@@ -203,115 +203,58 @@ namespace GetTruyen
             }
         }
 
-        public async Task<TruyenContent> GetContent(IPage page, int trynum = 0)
+        public async Task<List<NovelContent>?> GetNovelsFromJson(string input)
         {
-            var rs = new TruyenContent();
-            try
+            var json = JObject.Parse(input);
+
+            var results = json?["data"]?["list"]?
+            .Where(p => (bool?)p?["isFull"] ?? false == true)
+            .Select(p => new NovelContent()
             {
-
-                var title_div = page.Locator("xpath=//html/body/div/div/div[2]/div[1]/div[4]/h2");
-                //var content_div = page.Locator("xpath=//html/body/div/div/div[2]/div[1]/div[4]/div[2]/div/div");
-
-
-                var content = await page.EvaluateAsync<string>(@"() => {
-                let element = document.evaluate(
-                    '//html/body/div/div/div[2]/div[1]/div[4]/div[2]/div/div',  // Thay 'your_xpath' bằng XPath của bạn
-                    document,
-                    null,
-                    XPathResult.FIRST_ORDERED_NODE_TYPE,
-                    null
-                ).singleNodeValue;
-    
-                if (element) {
-                    let htmlContent = element.innerHTML;
-        
-                    // Thay thế tất cả <br>, </br>, <p> bằng \n
-                    htmlContent = htmlContent
-                                    .replace(/<br\s*\/?>/gi, '\n')
-                                    .replace(/<\/br\s*>/gi, '\n')
-                                    .replace(/<\/?p\s*>/gi, '\n')
-                                    .replace(/<\/p\s*>/gi, '\n');
-        
-                    return htmlContent;
-                }
-                return null;
-            }");
+                BookId = (string?)p["id"],
+                BookName = (string?)p["name"],
+                Slug = (string?)p?["slug"],
+                Author = (string?)p?["maker"],
+                Tags = p?["categories"]?.Select(r => (string?)r?["name"])?.ToList(),
+                Description = (string?)p?["description"],
+                ShortDesc = (string?)p?["shortDescription"],
+                ImageBase64 = (string?)p?["image"],
+            })?.ToList();
 
 
-                var lstContent = content?.Split("\n")?.ToList();
-
-                lstContent?.RemoveRange(0, 10);
-                lstContent = lstContent?.Where(x => !string.IsNullOrEmpty(x))?.ToList();
-                lstContent?.ForEach(x => x = x.Replace("<p>", "").Replace("</p>", ""));
-
-                if (lstContent != null)
-                {
-                    rs.Content?.AddRange(lstContent);
-                }
-
-                rs.URL = page.Url;
-                rs.Title = await title_div.TextContentAsync();
-
-            }
-            catch (Exception)
-            {
-
-            }
-
-            //goto retry;
-
-
-            //retry:
-            //    {
-            //        try
-            //        {
-            //            if (rs.Content?.Count <= _config.minContentLength & trynum < _config.maxTrialGet)
-            //            {
-            //                await page.ReloadAsync(new PageReloadOptions() { WaitUntil = _pageGotoOption.WaitUntil, Timeout = _pageGotoOption.Timeout });
-            //                await Task.Delay(1000);
-            //                await GetContent(page, trynum += 1);
-            //            }
-            //        }
-            //        catch (Exception)
-            //        {
-            //            //Dung 30s khi bi chan
-            //            await Task.Delay(30000);
-            //            Console.WriteLine("Delay 30s");
-            //            goto retry;
-            //        }
-
-            //    }
-
-            return rs;
+            return results;
         }
 
 
-
-
-
-
-
-        public async Task CompressFiles()
+        public async Task GetChapter(NovelContent novel)
         {
-            string? folderPath = "D:\\Truyen\\JSON\\Orginal_Json";
-            string outputPath = @"D:\Truyen\JSON\\ZstdCompressed";
+            //Get chapters
+            var urlAllChapter = $"{_config.HostAPI}/chapters/{novel.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
+            var req = await _apiContext.GetAsync(urlAllChapter);
 
-            List<string> files = Directory.GetFiles(folderPath).ToList();
-
-
-            foreach (var item in files)
+            if (!req.Ok)
             {
-                var filename = Path.GetFileNameWithoutExtension(item);
-
-                var text = await File.ReadAllTextAsync(item);
-
-                var fullPath = $"{outputPath}\\{filename}.novel";
-                var compressText = Utils.CompressZstd(text);
-                await System.IO.File.WriteAllTextAsync(fullPath, compressText);
-
-                Console.WriteLine($"Done {fullPath}");
+                return;
             }
+
+            var jsonAllChapter = JObject.Parse(await req.TextAsync());
+
+            var allChapter = jsonAllChapter?["data"]?["list"]?
+            .Select(x =>
+            new ChapterContent()
+            {
+                ChapterId = (string?)x?["_id"],
+                Title = (string?)x?["name"],
+                IndexChapter = (int?)x?["chapterNumber"],
+                Slug = (string?)x?["chapterString"],
+                BookId = novel.BookId,
+            });
+
+
+            novel.Chapters = allChapter?.OrderBy(x => x.IndexChapter).ToList();
+            novel.MaxChapterCount = novel?.Chapters?.Count;
         }
+
 
 
         public async Task GetFullNovelByCat(string? cateId)
@@ -341,65 +284,9 @@ namespace GetTruyen
         }
 
 
-        public async Task<List<NovelContent>?> GetNovelsFromJson(string input)
+        public async Task<List<NovelContent>?> GetFullNovel(bool isFull = true)
         {
-            var json = JObject.Parse(input);
-
-            var results = json?["data"]?["list"]?
-            .Where(p => (bool?)p?["isFull"] ?? false == true)
-            .Select(p => new NovelContent()
-            {
-                BookId = (string?)p["id"],
-                BookName = (string?)p["name"],
-                Slug = (string?)p?["slug"],
-                Author = (string?)p?["maker"],
-                Tags = p?["categories"]?.Select(r => (string?)r?["name"])?.ToList(),
-                Description = (string?)p?["description"],
-                ShortDesc = (string?)p?["shortDescription"],
-                ImageBase64 = (string?)p?["image"],
-            })?.ToList();
-
-            if (results == null)
-            {
-                return null;
-            }
-
-            //Get Chapter
-            foreach (var item in results)
-            {
-                //Get chapters
-                var urlAllChapter = $"{_config.HostAPI}/chapters/{item.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
-                var req = await _apiContext.GetAsync(urlAllChapter);
-
-                if (!req.Ok)
-                {
-                    continue;
-                }
-
-                var jsonAllChapter = JObject.Parse(await req.TextAsync());
-
-                var allChapter = jsonAllChapter?["data"]?["list"]?
-                .Select(x =>
-                new ChapterContent()
-                {
-                    ChapterId = (string?)x?["_id"],
-                    Title = (string?)x?["name"],
-                    IndexChapter = (int?)x?["chapterNumber"],
-                    Slug = (string?)x?["chapterString"],
-                    BookId = item.BookId,
-                });
-
-
-                item.Chapters = allChapter?.OrderBy(x => x.IndexChapter).ToList();
-
-            }
-
-            return results;
-        }
-
-
-        public async Task GetFullNovel(bool isFull = true)
-        {
+            Console.WriteLine("Getting novels...");
 
             string web = $"{_config.HostAPI}/novels?isFull={(isFull ? "true" : "false")}&page=1&limit=9999999";
 
@@ -408,7 +295,7 @@ namespace GetTruyen
 
             if (!response.Ok)
             {
-                return;
+                return null;
             }
 
             var results = await GetNovelsFromJson(await response.TextAsync());
@@ -419,8 +306,8 @@ namespace GetTruyen
             string fileName = $"{_config.outputPath}//list-novel.json";
 
             await File.WriteAllTextAsync(fileName, jsonOut);
-
-
+            Console.WriteLine("Get novels completed");
+            return results;
         }
 
 
@@ -428,8 +315,6 @@ namespace GetTruyen
         {
             try
             {
-
-
                 var link = $"{_config.HostWeb}/{bookSlug}/{chap.Slug}";
                 var tab = await NewPage(link);
 
@@ -475,7 +360,7 @@ namespace GetTruyen
                 catch (Exception)
                 {
                     Console.WriteLine("Not found file list-novel.json. Get again!");
-                    await GetFullNovel(_config?.isFull??true);
+                    lstNovel = await GetFullNovel(_config?.isFull ?? true);
                 }
 
 
@@ -494,6 +379,8 @@ namespace GetTruyen
                         continue;
                     }
 
+                    await GetChapter(novel);
+
                     string reTitle = $"{lstNovel?.IndexOf(novel) + 1}/{lstNovel?.Count}";
                     var fileName = $"{_config?.outputPath}\\{novel?.Slug}.novel";
                     novel.MaxChapterCount = novel.MaxChapterCount ?? novel?.Chapters?.Count ?? 0;
@@ -511,7 +398,7 @@ namespace GetTruyen
 
                     var parallelOptions = new ParallelOptions
                     {
-                        MaxDegreeOfParallelism =_config.maxThread
+                        MaxDegreeOfParallelism = _config.maxThread
                     };
 
                     await Parallel.ForEachAsync(novel.Chapters, parallelOptions, async (chapter, cancellationToken) =>
@@ -519,7 +406,7 @@ namespace GetTruyen
                         await GetContentDetail(chapter, novel.Slug, maxChap: novel?.MaxChapterCount, reTitle: reTitle);
                     });
 
-                    if (novel?.Chapters?.Any(x=>x?.ChapterDetailContents?.Count() == 0)??true)
+                    if (novel?.Chapters?.Any(x => x?.ChapterDetailContents?.Count() == 0) ?? true)
                     {
                         Console.WriteLine($"[{reTitle}] Some chapter is missing - Skip save");
                         continue;

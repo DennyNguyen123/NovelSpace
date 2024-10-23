@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -19,6 +20,51 @@ namespace DataSharedLibrary
 
     public static class Utils
     {
+        public static string DecryptAes(string encryptedData, string password)
+        {
+            // Chuyển đổi chuỗi Base64 thành mảng byte
+            byte[] cipherBytes = Convert.FromBase64String(encryptedData);
+
+            // Tạo một đối tượng AES
+            using (Aes aes = Aes.Create())
+            {
+                // Tạo khóa từ mật khẩu
+                using (var key = new Rfc2898DeriveBytes(password, new byte[16], 1000))
+                {
+                    aes.Key = key.GetBytes(aes.KeySize / 8);
+                }
+
+                // Đặt thông tin cho đối tượng AES
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                // Lấy IV từ dữ liệu đã mã hóa (nếu cần)
+                byte[] iv = new byte[aes.BlockSize / 8];
+                Array.Copy(cipherBytes, iv, iv.Length);
+                aes.IV = iv;
+
+                // Lấy dữ liệu đã mã hóa (cắt bỏ IV)
+                byte[] cipherText = new byte[cipherBytes.Length - iv.Length];
+                Array.Copy(cipherBytes, iv.Length, cipherText, 0, cipherText.Length);
+
+                // Giải mã dữ liệu
+                using (var decryptor = aes.CreateDecryptor())
+                {
+                    using (var msDecrypt = new MemoryStream(cipherText))
+                    {
+                        using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                        {
+                            using (var srDecrypt = new StreamReader(csDecrypt))
+                            {
+                                return srDecrypt.ReadToEnd();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
 
         // Hàm nén dữ liệu
         public static string CompressZstd(string text)
