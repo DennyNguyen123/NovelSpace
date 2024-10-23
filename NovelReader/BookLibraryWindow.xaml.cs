@@ -94,7 +94,7 @@ namespace NovelReader
 
         private void ImportBook_Click(object sender, RoutedEventArgs e)
         {
-            var filename = WpfUtils.GetFilePath(null, "EPUB files (*.epub)|*.epub|Novel files (*.novel)|*.novel");
+            var filename = WpfUtils.GetFilePath(null, "Novel files (*.novel)|*.novel|EPUB files (*.epub)|*.epub|All Files|*.*");
             string? bookId = null;
             string? msg = null;
             bool isDone = false;
@@ -161,6 +161,7 @@ namespace NovelReader
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
                     , isRunAsync: true
                     , isHideMainWindows: false
+                    , isDeactiveMainWindow : true
                     );
 
 
@@ -172,15 +173,33 @@ namespace NovelReader
         {
             if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
             {
-                var rs = MainWindow._AppDbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
-                if (!rs.isSuccess)
-                {
-                    this.ShowError(rs.msg);
-                }
-                else
-                {
-                    LoadNovels();
-                }
+
+                this.RunTaskWithSplash(
+                    action: () =>
+                    {
+                        var rs = MainWindow._AppDbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+
+                        if (!rs.isSuccess)
+                        {
+                            this.ShowError(rs.msg);
+                        }
+                        else
+                        {
+                            LoadNovels();
+                        }
+                    }
+                    ,
+                    doneAction : () =>
+                    {
+                       
+                    }
+                    , textColor: MainWindow.AppConfig.TextColor
+                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                    , isRunAsync: false
+                    , isHideMainWindows: false
+                );
+
+                
             }
         }
 

@@ -64,9 +64,17 @@ namespace DataSharedLibrary
 
         public static bool Like(this string input, string pattern)
         {
-            // Thay thế ký tự '%' bằng ký tự đại diện
-            string regexPattern = "^" + pattern.Replace("%", ".*").Replace("_", ".") + "$";
-            return System.Text.RegularExpressions.Regex.IsMatch(input, regexPattern);
+            // Escape regex special characters except for %, _
+            string regexPattern = Regex.Escape(pattern);
+
+            // Replace SQL LIKE wildcards with regex wildcards
+            regexPattern = regexPattern.Replace("%", ".*").Replace("_", ".");
+
+            // Add start and end anchors to the pattern
+            regexPattern = "^" + regexPattern + "$";
+
+            // Perform case-insensitive matching
+            return Regex.IsMatch(input, regexPattern, RegexOptions.IgnoreCase);
         }
 
 

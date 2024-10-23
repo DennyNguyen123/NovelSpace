@@ -29,6 +29,7 @@ namespace WpfLibrary
             , bool isHideMainWindows = true, bool isRunAsync = true
             , bool isTopMost = false
             , string? textColor = null, string? backgroudColor = null
+            , bool isDeactiveMainWindow = false
             )
         {
 
@@ -49,6 +50,11 @@ namespace WpfLibrary
                 windows.Hide();
             }
 
+            if (isDeactiveMainWindow)
+            { 
+                windows.IsEnabled = false;
+            }
+
             var task = new Task(() =>
             {
                 action();
@@ -61,6 +67,11 @@ namespace WpfLibrary
                     if (isHideMainWindows)
                     {
                         windows.Show();     // Hiển thị MainWindow
+                    }
+
+                    if (isDeactiveMainWindow)
+                    {
+                        windows.IsEnabled = true;
                     }
 
                 });

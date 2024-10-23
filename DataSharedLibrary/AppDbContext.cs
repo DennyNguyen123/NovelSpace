@@ -96,7 +96,12 @@ namespace DataSharedLibrary
                 .Select(r => r.Content)
                 .ToListAsync();
 
-            chapter.Content = content?.Where(x => !x.IsHtml()).ToList();
+            var cleanedItems = content
+            .Select(item => Utils.GetHtmlInnerText(item?.Replace("&nbsp;", "").Trim()) ) // Remove &nbsp and trim spaces/tabs
+            .Where(item => !string.IsNullOrWhiteSpace(item)) // Optional: remove empty or whitespace items
+            .ToList();
+
+            chapter.Content = cleanedItems;
             return chapter;
         }
 

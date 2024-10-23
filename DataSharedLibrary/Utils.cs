@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HtmlAgilityPack;
+using System;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Linq;
@@ -164,6 +165,23 @@ namespace DataSharedLibrary
 
             // Kiểm tra nếu chuỗi không khớp với biểu thức chính quy
             return !Regex.IsMatch(input ?? "", pattern);
+        }
+
+
+        public static string? GetHtmlInnerText(string? html)
+        {
+            if (!html?.IsHtml() ?? false || string.IsNullOrWhiteSpace(html))
+            {
+                return html;
+            }
+
+            // Load HTML document
+            HtmlDocument doc = new HtmlDocument();
+            doc.LoadHtml(html);
+
+
+            string innerText = doc.DocumentNode.InnerText;
+            return innerText;
         }
 
         public static async Task<T?> GetModelFromJsonFile<T>(string jsonpath, T? input = null, string? action = null) where T : class?
