@@ -85,7 +85,7 @@ namespace DataSharedLibrary
             return novel;
         }
 
-        public async Task<ChapterContent> GetContentChapter(ChapterContent chapter)
+        public async Task<ChapterContent> GetContentChapter(ChapterContent chapter, string? bookName)
         {
             var content = await this.ChapterDetailContents.AsNoTracking()
                 .Where(x =>
@@ -97,7 +97,7 @@ namespace DataSharedLibrary
                 .ToListAsync();
 
             var cleanedItems = content
-            .Select(item => Utils.GetHtmlInnerText(item?.Replace("&nbsp;", "").Trim()) ) // Remove &nbsp and trim spaces/tabs
+            .Select(item => Utils.GetHtmlInnerText(item?.Replace("&nbsp;", "").Trim().Replace(bookName ?? "", "").Replace(chapter.Title ?? "", "") ) ) // Remove &nbsp and trim spaces/tabs
             .Where(item => !string.IsNullOrWhiteSpace(item)) // Optional: remove empty or whitespace items
             .ToList();
 
@@ -376,7 +376,7 @@ namespace DataSharedLibrary
 
             novel?.Chapters?.ForEach(async chap =>
             {
-                chap = await this.GetContentChapter(chap);
+                chap = await this.GetContentChapter(chap, novel?.BookName);
                 string content = "";
 
                 if (chap?.Content?.Count > 0)

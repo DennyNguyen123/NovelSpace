@@ -230,7 +230,7 @@ namespace NovelReader
                         this.Novel.Chapters.Where(x => x.Content?.Count > 0).ToList().ForEach(r => { r.Content = null; });
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter).GetAwaiter().GetResult();
+                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName).GetAwaiter().GetResult();
 
                         if (!isFirstLoad)
                         {
