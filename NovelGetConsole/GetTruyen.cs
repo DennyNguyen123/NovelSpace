@@ -226,33 +226,47 @@ namespace GetTruyen
         }
 
 
-        public async Task GetChapter(NovelContent novel)
+        public async Task GetChapter(NovelContent novel, int trial = 0)
         {
-            //Get chapters
-            var urlAllChapter = $"{_config.HostAPI}/chapters/{novel.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
-            var req = await _apiContext.GetAsync(urlAllChapter);
-
-            if (!req.Ok)
+            try
             {
-                return;
+                //Get chapters
+                var urlAllChapter = $"{_config.HostAPI}/chapters/{novel.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
+                var req = await _apiContext.GetAsync(urlAllChapter);
+
+                if (!req.Ok)
+                {
+                    return;
+                }
+
+                var jsonAllChapter = JObject.Parse(await req.TextAsync());
+
+                var allChapter = jsonAllChapter?["data"]?["list"]?
+                .Select(x =>
+                new ChapterContent()
+                {
+                    ChapterId = (string?)x?["_id"],
+                    Title = (string?)x?["name"],
+                    IndexChapter = (int?)x?["chapterNumber"],
+                    Slug = (string?)x?["chapterString"],
+                    BookId = novel.BookId,
+                });
+
+
+                novel.Chapters = allChapter?.OrderBy(x => x.IndexChapter).ToList();
+                novel.MaxChapterCount = novel?.Chapters?.Count;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                if (trial <= _config.maxTrialGet)
+                {
+                    Console.WriteLine("Retry");
+                    await GetChapter(novel, trial++);
+                }
+
             }
 
-            var jsonAllChapter = JObject.Parse(await req.TextAsync());
-
-            var allChapter = jsonAllChapter?["data"]?["list"]?
-            .Select(x =>
-            new ChapterContent()
-            {
-                ChapterId = (string?)x?["_id"],
-                Title = (string?)x?["name"],
-                IndexChapter = (int?)x?["chapterNumber"],
-                Slug = (string?)x?["chapterString"],
-                BookId = novel.BookId,
-            });
-
-
-            novel.Chapters = allChapter?.OrderBy(x => x.IndexChapter).ToList();
-            novel.MaxChapterCount = novel?.Chapters?.Count;
         }
 
 
@@ -336,7 +350,7 @@ namespace GetTruyen
 
                 if (trial <= _config.maxTrialGet)
                 {
-                    await GetContentDetail(chap, bookSlug, trial++);
+                    await GetContentDetail(chap, bookSlug, maxChap, trial++, reTitle);
                 }
 
             }
@@ -379,19 +393,19 @@ namespace GetTruyen
                         continue;
                     }
 
-                    await GetChapter(novel);
-
                     string reTitle = $"{lstNovel?.IndexOf(novel) + 1}/{lstNovel?.Count}";
                     var fileName = $"{_config?.outputPath}\\{novel?.Slug}.novel";
-                    novel.MaxChapterCount = novel.MaxChapterCount ?? novel?.Chapters?.Count ?? 0;
+
 
                     if (File.Exists(fileName))
                     {
                         Console.WriteLine($"[{reTitle}] Already exist {fileName} - Skipped");
                         continue;
                     }
-
                     Console.WriteLine($"[{reTitle}] Get novel: {novel?.BookName} - {novel?.MaxChapterCount} chapters");
+
+                    await GetChapter(novel);
+
 
                     novel.ImageBase64 = await Utils.DownloadImageAsBase64(novel?.ImageBase64);
 
@@ -417,6 +431,8 @@ namespace GetTruyen
                     var compress = Utils.GZipCompressText(json);
 
                     await File.WriteAllTextAsync(fileName, compress);
+
+                    Console.WriteLine(($"[{reTitle}] {novel?.BookName} save completed"));
                 }
 
 
