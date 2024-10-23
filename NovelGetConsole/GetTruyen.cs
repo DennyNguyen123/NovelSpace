@@ -44,6 +44,8 @@ namespace GetTruyen
     {
         public string? HostWeb { get; set; }
         public string? HostAPI { get; set; }
+
+        public string? UrlGetListChapter { get; set; }
         public string? outputPath { get; set; }
         public string? epubOutputPath { get; set; }
         public string? pathBrowser { get; set; }
@@ -60,6 +62,23 @@ namespace GetTruyen
         public float timeOut { get; set; }
     }
 
+    public class LogWithConsole
+    {
+        private string _logPath { get; set; }
+
+        public LogWithConsole(string logpath)
+        {
+            this._logPath = logpath;
+        }
+
+        public async Task WriteLog(string? msg)
+        {
+            await Utils.WriteLogWithConsole(this._logPath, msg);
+        }
+
+    }
+
+
     public class GetTruyen
     {
         protected IPlaywright? _playwright;
@@ -74,6 +93,8 @@ namespace GetTruyen
 
         public AppConfig _config;
         protected string _config_path = "appconf.json";
+
+        protected LogWithConsole _log { get; set; }
 
 
         public GetTruyen()
@@ -96,6 +117,10 @@ namespace GetTruyen
             Utils.CreateFolderIfNotExist(_config?.epubOutputPath);
             Utils.CreateFolderIfNotExist(_config?.logPath);
 
+
+            var logFileName = $"{_config?.logPath??"."}/{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.log";
+            _log = new LogWithConsole(logFileName);
+
             _pageGotoOption = new PageGotoOptions() { WaitUntil = WaitUntilState.NetworkIdle, Timeout = _config?.timeOut ?? 3000 };
 
         }
@@ -103,7 +128,7 @@ namespace GetTruyen
         public async Task<bool?> InitBrowser()
         {
             Utils.ConsoleUTF8();
-            Console.WriteLine("Loading...");
+            await _log.WriteLog("Loading...");
 
             // Khởi tạo Playwright và trình duyệt Chromium
             _playwright = await Playwright.CreateAsync();
@@ -258,10 +283,10 @@ namespace GetTruyen
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                await _log.WriteLog(ex.Message);
                 if (trial <= _config.maxTrialGet)
                 {
-                    Console.WriteLine("Retry");
+                    await _log.WriteLog("Retry");
                     await GetChapter(novel, trial++);
                 }
 
@@ -298,11 +323,11 @@ namespace GetTruyen
         }
 
 
-        public async Task<List<NovelContent>?> GetFullNovel(bool isFull = true)
+        public async Task<List<NovelContent>?> GetFullNovel()
         {
-            Console.WriteLine("Getting novels...");
+            await _log.WriteLog("Getting novels...");
 
-            string web = $"{_config.HostAPI}/novels?isFull={(isFull ? "true" : "false")}&page=1&limit=9999999";
+            string web = $"{_config.HostAPI}{_config.UrlGetListChapter}";
 
 
             var response = await _apiContext.GetAsync(web);
@@ -320,7 +345,7 @@ namespace GetTruyen
             string fileName = $"{_config.outputPath}//list-novel.json";
 
             await File.WriteAllTextAsync(fileName, jsonOut);
-            Console.WriteLine("Get novels completed");
+            await _log.WriteLog("Get novels completed");
             return results;
         }
 
@@ -342,11 +367,11 @@ namespace GetTruyen
 
                 chap.ChapterDetailContents = await AppDbContext.GenerateChapterContent(content, chap.BookId, chap.ChapterId);
 
-                Console.WriteLine($"[{reTitle}][{bookSlug}][Trial {trial}] Completed chapter {chap.IndexChapter}/{maxChap} - {chap.Slug} - ({chap?.ChapterDetailContents?.Count} contents)");
+                await _log.WriteLog($"[{reTitle}][{bookSlug}][Trial {trial}] Completed chapter {chap.IndexChapter}/{maxChap} - {chap.Slug} - ({chap?.ChapterDetailContents?.Count} contents)");
             }
             catch (Exception)
             {
-                Console.WriteLine($"[{reTitle}][{bookSlug}] Failed chapter {chap.IndexChapter} - {chap.Slug}");
+                await _log.WriteLog($"[{reTitle}][{bookSlug}] Failed chapter {chap.IndexChapter} - {chap.Slug}");
 
                 if (trial <= _config.maxTrialGet)
                 {
@@ -373,8 +398,8 @@ namespace GetTruyen
                 }
                 catch (Exception)
                 {
-                    Console.WriteLine("Not found file list-novel.json. Get again!");
-                    lstNovel = await GetFullNovel(_config?.isFull ?? true);
+                    await _log.WriteLog("Not found file list-novel.json. Get again!");
+                    lstNovel = await GetFullNovel();
                 }
 
 
@@ -399,10 +424,10 @@ namespace GetTruyen
 
                     if (File.Exists(fileName))
                     {
-                        Console.WriteLine($"[{reTitle}] Already exist {fileName} - Skipped");
+                        await _log.WriteLog($"[{reTitle}] Already exist {fileName} - Skipped");
                         continue;
                     }
-                    Console.WriteLine($"[{reTitle}] Get novel: {novel?.BookName} - {novel?.MaxChapterCount} chapters");
+                    await _log.WriteLog($"[{reTitle}] Get novel: {novel?.BookName} - {novel?.MaxChapterCount} chapters");
 
                     await GetChapter(novel);
 
@@ -422,7 +447,7 @@ namespace GetTruyen
 
                     if (novel?.Chapters?.Any(x => x?.ChapterDetailContents?.Count() == 0) ?? true)
                     {
-                        Console.WriteLine($"[{reTitle}] Some chapter is missing - Skip save");
+                        await _log.WriteLog($"[{reTitle}] Some chapter is missing - Skip save");
                         continue;
                     }
 
@@ -432,17 +457,17 @@ namespace GetTruyen
 
                     await File.WriteAllTextAsync(fileName, compress);
 
-                    Console.WriteLine(($"[{reTitle}] {novel?.BookName} save completed"));
+                    await _log.WriteLog(($"[{reTitle}] {novel?.BookName} save completed"));
                 }
 
 
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                await _log.WriteLog(ex.Message);
                 if (trial <= _config.maxTrialGet)
                 {
-                    Console.WriteLine("Restarted");
+                    await _log.WriteLog("Restarted");
                     await GetContentByList(trial++);
                 }
             }

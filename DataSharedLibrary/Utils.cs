@@ -306,15 +306,6 @@ namespace DataSharedLibrary
         }
 
 
-        public async static Task WriteLogWithConsole(FileStream? fileStream, string? msg)
-        {
-            string? patternMsg = $"{DateTime.Now} : {msg}";
-            Console.WriteLine(patternMsg);
-            WriteAtLast(fileStream, patternMsg);
-
-        }
-
-
         public async static Task WriteLogWithConsole(string filename, string? msg)
         {
             string? patternMsg = $"{DateTime.Now} : {msg}";

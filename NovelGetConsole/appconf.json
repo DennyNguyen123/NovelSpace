@@ -3,10 +3,10 @@
   "delayTime": 200,
   "isHeadless": true,
   "isFull": true,
-  "maxThread": 20,
+  "maxThread": 8,
   "maxTrialGet": 20,
   "minContentLength": 1,
-  "outputPath": "E:\\Truyen\\NOVEL\\Tiên hiệp",
+  "outputPath": "E:\\Truyen\\NOVEL",
   "epubOutputPath": "D:\\Truyen\\JSON\\docfull.org",
   "pathBrowser": "C:\\Users\\nguye\\AppData\\Local\\CentBrowser\\Application\\chrome.exe",
   "usrGet": "nguyenliemthanh.dev@gmail.com",
@@ -14,5 +14,6 @@
   "timeOut": 3000,
   "logPath": "logs",
   "HostWeb": "https://docfull.vn",
-  "HostAPI": "https://api.docfull.vn/api/v1"
+  "HostAPI": "https://api.docfull.vn/api/v1",
+  "UrlGetListChapter": "/novels?isFull=true&page=1&limit=9999999"
 }
