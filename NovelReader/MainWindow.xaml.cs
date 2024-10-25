@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Speech.Synthesis;
 using System.Windows;
 using System.Windows.Controls;
@@ -267,10 +268,9 @@ namespace NovelReader
 
         public void LoadNovelData()
         {
-            this.RunTaskWithSplash(
-            action: () =>
+            this.RunTaskWithSplash_NEW(
+            action: (progress) =>
             {
-
                 var dbPath = AppConfig._sqlitepath;
                 var bookId = AppConfig.CurrentBookId;
 
@@ -279,10 +279,11 @@ namespace NovelReader
                     var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
-
+                progress.Value = 50;
                 this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
                 _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
+                progress.Value = 100;
             }
             , doneAction: () =>
             {

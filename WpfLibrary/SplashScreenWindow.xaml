@@ -15,7 +15,7 @@
     <Grid Background="Transparent">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock x:Name="txtStatus" Text="Loading, please wait..." FontSize="24"/>
-            <ProgressBar x:Name="progressBar" Width="200" Height="20" IsIndeterminate="True"/>
+            <ProgressBar x:Name="progressBar" Maximum="100" Minimum="0" Cursor="Wait" Width="200" Height="20" IsIndeterminate="False"/>
         </StackPanel>
     </Grid>
 </Window>

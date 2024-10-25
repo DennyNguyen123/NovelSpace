@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -58,6 +59,74 @@ namespace WpfLibrary
             var task = new Task(() =>
             {
                 action();
+
+                System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                {
+                    splash.Close(); // Đóng SplashScreen
+
+                    doneAction?.Invoke();
+                    if (isHideMainWindows)
+                    {
+                        windows.Show();     // Hiển thị MainWindow
+                    }
+
+                    if (isDeactiveMainWindow)
+                    {
+                        windows.IsEnabled = true;
+                    }
+
+                });
+
+            });
+
+
+            if (isRunAsync)
+            {
+                task.Start();
+            }
+            else
+            {
+                task.RunSynchronously();
+            }
+        }
+
+
+        public static void RunTaskWithSplash_NEW(this Window windows, Action<System.Windows.Controls.ProgressBar> action, Action? doneAction = null
+            , bool isHideMainWindows = true, bool isRunAsync = true
+            , bool isTopMost = false
+            , string? textColor = null, string? backgroudColor = null
+            , bool isDeactiveMainWindow = false
+            )
+        {
+            isRunAsync = true;
+
+            SplashScreenWindow splash = new SplashScreenWindow();
+            splash.Topmost = isTopMost;
+            splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
+            splash.Background = ConvertHtmlColorToBrush(backgroudColor);
+            if (windows.IsLoaded)
+            {
+                splash.Owner = windows;
+            }
+
+
+            splash.SetPositionCenterParent(windows);
+            splash.Show();
+
+            if (isHideMainWindows)
+            {
+                windows.Hide();
+            }
+
+            if (isDeactiveMainWindow)
+            {
+                windows.IsEnabled = false;
+            }
+
+
+            var task = new Task(() =>
+            {
+                action(splash.progressBar);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
