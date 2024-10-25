@@ -99,8 +99,8 @@ namespace DataSharedLibrary
             var cleanedItems = content
             .Select(item => Utils.GetHtmlInnerText(item?.Replace("&nbsp;", "").Trim()?
             //Remove ()
-            .Replace(bookName?.ReplaceRegex(@"\s*\(.*?\)", "")?? "", "")
-            .Replace(chapter.Title ?? "", "") ) ) // Remove &nbsp and trim spaces/tabs
+            .Replace(bookName?.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "")
+            .Replace(chapter.Title ?? "", ""))) // Remove &nbsp and trim spaces/tabs
             .Where(item => !string.IsNullOrWhiteSpace(item)) // Optional: remove empty or whitespace items
             .ToList();
 
@@ -140,13 +140,15 @@ namespace DataSharedLibrary
             return rs;
         }
 
-        public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename)
+        public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename, Action<double>? updateProgress = null)
         {
             IDbContextTransaction? transaction = null;
             try
             {
 
                 var novelContent = Utils.JsonFromCompress<NovelContent?>(filename);
+
+                updateProgress?.Invoke(50);
                 if (novelContent != null)
                 {
                     var checkExist = await CheckExist(novelContent?.BookName);
@@ -194,6 +196,7 @@ namespace DataSharedLibrary
 
                     await this.NovelContents.AddAsync(novelContent);
                     await this.SaveChangesAsync();
+                    updateProgress?.Invoke(99);
 
                     return (novelContent?.BookId, null);
 
@@ -253,7 +256,9 @@ namespace DataSharedLibrary
                             content.Content = con;
                             content.Index = chapter.Content.IndexOf(con);
                             lstChapterDetail.Add(content);
+
                         });
+
 
                     });
 
@@ -287,7 +292,7 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<(string? bookId, string? msg)> ImportEpub(string filePath)
+        public async Task<(string? bookId, string? msg)> ImportEpub(string filePath, Action<double>? updateProgress = null)
         {
             try
             {
@@ -330,11 +335,11 @@ namespace DataSharedLibrary
 
                 chapters?.ForEach(async chapter =>
                 {
+                    var index = (double)chapters.IndexOf(chapter);
                     var novelChapter = new ChapterContent();
-                    var index = chapters.IndexOf(chapter);
                     var chapter_title = chapter.Title;
 
-                    novelChapter.IndexChapter = index;
+                    novelChapter.IndexChapter = (int)index;
                     novelChapter.ChapterId = Guid.NewGuid().ToString();
                     novelChapter.Title = chapter_title;
                     novelChapter.BookId = novel.BookId;
@@ -351,6 +356,13 @@ namespace DataSharedLibrary
 
                     novel.Chapters.Add(novelChapter);
 
+                    var chapterCount = (double)(novel?.Chapters?.Count() ?? 0);
+
+                    var state = index / chapterCount * 100;
+
+
+                    updateProgress?.Invoke(state > 100 ? 0 : state);
+
                 }
                 );
 
@@ -366,19 +378,20 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task ExportToEpub(string epubFileName, string? bookId)
+        public async Task ExportToEpub(string epubFileName, string? bookId, Action<double>? updateProgress = null)
         {
 
             var novel = await GetNovel(bookId, isMergeAuthorName: false);
 
             var doc = new Epub(novel?.BookName, novel?.Author);
 
-            var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64??""));
+            var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64 ?? ""));
             doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
 
 
             novel?.Chapters?.ForEach(async chap =>
             {
+                var index = (double)(novel?.Chapters?.IndexOf(chap) ?? 0);
                 chap = await this.GetContentChapter(chap, novel?.BookName);
                 string content = "";
 
@@ -389,6 +402,13 @@ namespace DataSharedLibrary
 
                 string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{content}<br><br><br>";
                 doc.AddSection(chap?.Title, html);
+
+                var chapterCount = (double)(novel?.Chapters?.Count() ?? 0);
+
+                var state = index / chapterCount * 100;
+
+                updateProgress?.Invoke(state > 100 ? 0 : state);
+
             });
 
             using (var fs = new FileStream(epubFileName, FileMode.Create))
@@ -399,15 +419,18 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId)
+        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId, Action<double>? updateProgress = null)
         {
             try
             {
-
                 await this.ChapterDetailContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                updateProgress?.Invoke(20);
                 await this.ChapterContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                updateProgress?.Invoke(40);
                 await this.NovelContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                updateProgress?.Invoke(70);
                 await this.SaveChangesAsync();
+                updateProgress?.Invoke(90);
                 return (true, null);
 
             }

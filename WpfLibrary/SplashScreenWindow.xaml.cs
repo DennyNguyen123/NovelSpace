@@ -21,10 +21,26 @@ namespace WpfLibrary
     {
         public SplashScreenWindow()
         {
-            
-
             InitializeComponent();
+        }
 
+
+        public void UpdateProgressBar(double value)
+        {
+            // Check if the current thread is different from the UI thread
+            if (!this.Dispatcher.CheckAccess())
+            {
+                // If the current thread is not the UI thread, invoke the update on the UI thread
+                this.Dispatcher.Invoke(() =>
+                {
+                    this.progressBar.Value = value;
+                });
+            }
+            else
+            {
+                // If the current thread is the UI thread, update directly
+                this.progressBar.Value = value;
+            }
         }
     }
 }

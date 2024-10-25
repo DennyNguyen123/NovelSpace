@@ -97,15 +97,12 @@ namespace NovelReader
             var filename = WpfUtils.GetFilePath(null, "Novel files (*.novel)|*.novel|EPUB files (*.epub)|*.epub|All Files|*.*");
             string? bookId = null;
             string? msg = null;
-            bool isDone = false;
             DateTime startDate = DateTime.Now;
-            int timeOut = 120000;
 
             if (!string.IsNullOrEmpty(filename))
             {
                 var ext = System.IO.Path.GetExtension(filename);
                 var lstExtSupport = new List<string>() { ".epub", ".novel" };
-                bool isRunable = false;
 
                 if (!lstExtSupport.Contains(ext))
                 {
@@ -113,16 +110,16 @@ namespace NovelReader
                 }
 
                 this.RunTaskWithSplash(
-                    () =>
+                    (aUpdateProgressBar) =>
                     {
 
                         if (ext == ".epub")
                         {
-                            (bookId, msg) = MainWindow._AppDbContext.ImportEpub(filename).GetAwaiter().GetResult();
+                            (bookId, msg) = MainWindow._AppDbContext.ImportEpub(filename, aUpdateProgressBar).GetAwaiter().GetResult();
                         }
                         else if (ext == ".novel")
                         {
-                            (bookId, msg) = MainWindow._AppDbContext.ImportBookByJsonModel(filename).GetAwaiter().GetResult();
+                            (bookId, msg) = MainWindow._AppDbContext.ImportBookByJsonModel(filename, aUpdateProgressBar).GetAwaiter().GetResult();
                         }
 
                     }
@@ -175,9 +172,9 @@ namespace NovelReader
             {
 
                 this.RunTaskWithSplash(
-                    action: () =>
+                    action: (aUpdateProgressBar) =>
                     {
-                        var rs = MainWindow._AppDbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+                        var rs = MainWindow._AppDbContext.DeleteNovel(novel.BookId, aUpdateProgressBar).GetAwaiter().GetResult();
 
                         if (!rs.isSuccess)
                         {
@@ -195,7 +192,7 @@ namespace NovelReader
                     }
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isRunAsync: false
+                    , isRunAsync: true
                     , isHideMainWindows: false
                 );
 
@@ -215,9 +212,9 @@ namespace NovelReader
                 {
 
                     this.RunTaskWithSplash(
-                    action: () =>
+                    action: (aUpdateProgressBar) =>
                     {
-                        MainWindow._AppDbContext.ExportToEpub(filename, novel.BookId).GetAwaiter().GetResult();
+                        MainWindow._AppDbContext.ExportToEpub(filename, novel.BookId, aUpdateProgressBar).GetAwaiter().GetResult();
                     }
                     , doneAction: () =>
                     {

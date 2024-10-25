@@ -224,7 +224,8 @@ namespace NovelReader
         private void LoadChapterContent(bool selectedLastItem = false, bool isFirstLoad = false)
         {
 
-            this.RunTaskWithSplash(() =>
+            this.RunTaskWithSplash(
+            action : (aUpdateProgressBar) =>
             {
                 if (Novel != null)
                 {
@@ -237,7 +238,7 @@ namespace NovelReader
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                         this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName).GetAwaiter().GetResult();
-
+                        aUpdateProgressBar(70);
                         if (!isFirstLoad)
                         {
                             if (selectedLastItem)
@@ -256,7 +257,7 @@ namespace NovelReader
                 }
             }
             , doneAction: () =>
-            {
+            {            
             }
             , isHideMainWindows: false
             , isRunAsync: false
@@ -268,8 +269,8 @@ namespace NovelReader
 
         public void LoadNovelData()
         {
-            this.RunTaskWithSplash_NEW(
-            action: (progress) =>
+            this.RunTaskWithSplash(
+            action: (aUpdateProgressBar) =>
             {
                 var dbPath = AppConfig._sqlitepath;
                 var bookId = AppConfig.CurrentBookId;
@@ -279,11 +280,12 @@ namespace NovelReader
                     var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
-                progress.Value = 50;
+                aUpdateProgressBar(70);
                 this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
+                aUpdateProgressBar(85);
                 _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
-                progress.Value = 100;
+                aUpdateProgressBar(70);
             }
             , doneAction: () =>
             {
@@ -303,7 +305,7 @@ namespace NovelReader
             try
             {
                 NumChapterGoto.Value = _current_reader.CurrentChapter + 1;
-                NumChapterGoto.Maximum= Novel?.MaxChapterCount;
+                NumChapterGoto.Maximum = Novel?.MaxChapterCount;
 
                 lstContent.SelectedIndex = _current_reader.CurrentLine;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
@@ -316,7 +318,7 @@ namespace NovelReader
 
 
                 //Update Title App
-                this.Title = $"[{SelectedChapter.IndexChapter??0 + 1}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
+                this.Title = $"[{SelectedChapter.IndexChapter ?? 0 + 1}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
 
 
                 //Utils.ClearRAM(false);

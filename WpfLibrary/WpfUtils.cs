@@ -36,6 +36,7 @@ namespace WpfLibrary
 
             SplashScreenWindow splash = new SplashScreenWindow();
             splash.Topmost = isTopMost;
+            splash.progressBar.IsIndeterminate = true;
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
             splash.Background = ConvertHtmlColorToBrush(backgroudColor);
             if (windows.IsLoaded)
@@ -52,7 +53,7 @@ namespace WpfLibrary
             }
 
             if (isDeactiveMainWindow)
-            { 
+            {
                 windows.IsEnabled = false;
             }
 
@@ -91,14 +92,14 @@ namespace WpfLibrary
         }
 
 
-        public static void RunTaskWithSplash_NEW(this Window windows, Action<System.Windows.Controls.ProgressBar> action, Action? doneAction = null
-            , bool isHideMainWindows = true, bool isRunAsync = true
+        public static void RunTaskWithSplash(this Window windows, Action<Action<double>> action, Action? doneAction = null
+            , bool isHideMainWindows = true
+            , bool isRunAsync = true
             , bool isTopMost = false
             , string? textColor = null, string? backgroudColor = null
             , bool isDeactiveMainWindow = false
             )
         {
-            isRunAsync = true;
 
             SplashScreenWindow splash = new SplashScreenWindow();
             splash.Topmost = isTopMost;
@@ -126,13 +127,17 @@ namespace WpfLibrary
 
             var task = new Task(() =>
             {
-                action(splash.progressBar);
+                action(splash.UpdateProgressBar);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
+                    if (doneAction != null)
+                    {
+                        doneAction.Invoke();
+                    }
+
                     splash.Close(); // Đóng SplashScreen
 
-                    doneAction?.Invoke();
                     if (isHideMainWindows)
                     {
                         windows.Show();     // Hiển thị MainWindow
@@ -216,12 +221,15 @@ namespace WpfLibrary
                 // Lấy full path của file mà người dùng chọn
                 string filePath = saveFileDialog.FileName;
 
-                // Thực hiện việc lưu file
-                System.IO.File.WriteAllText(filePath, "");
+                if (!File.Exists(filePath))
+                {
+                    System.IO.File.Create(filePath).Close();
+                }
+
 
                 return filePath;
             }
-            return null;
+            return "";
         }
 
 
