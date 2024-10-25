@@ -84,8 +84,10 @@ namespace DataSharedLibrary
             return novel;
         }
 
-        public async Task<ChapterContent> GetContentChapter(ChapterContent chapter, string? bookName)
+        public async Task<ChapterContent> GetContentChapter(ChapterContent chapter, string? bookName,CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var content = await this.ChapterDetailContents.AsNoTracking()
                 .Where(x =>
                 !string.IsNullOrWhiteSpace(x.Content)
@@ -93,7 +95,10 @@ namespace DataSharedLibrary
                 & x.ChapterId == chapter.ChapterId)
                 .OrderBy(x => x.Index)
                 .Select(r => r.Content)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
+
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             var cleanedItems = content
             .Select(item => Utils.GetHtmlInnerText(item?.Replace("&nbsp;", "").Trim()?
@@ -103,13 +108,17 @@ namespace DataSharedLibrary
             .Where(item => !string.IsNullOrWhiteSpace(item)) // Optional: remove empty or whitespace items
             .ToList();
 
+
+            cancellationToken.ThrowIfCancellationRequested();
+
             chapter.Content = cleanedItems;
             return chapter;
         }
 
 
-        public static async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId)
+        public static async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId,CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested ();
             var rs = new List<ChapterDetailContent>();
 
             content = content?.Replace("<br>", "\r\n").Replace("<br/>", "\r\n").Replace("</p>", "\r\n").Replace("<p>", "");
@@ -124,24 +133,29 @@ namespace DataSharedLibrary
             }
 
 
-            lstBody?.ForEach(content =>
+            if (lstBody?.Count == 0)
             {
+                return rs;
+            }
+
+            await Parallel.ForEachAsync(lstBody!, cancellationToken, async (content, token) =>
+            {
+                token.ThrowIfCancellationRequested();
                 var contentChapter = new ChapterDetailContent();
                 contentChapter.BookId = bookId;
                 contentChapter.ChapterId = chapterId;
                 contentChapter.Id = Guid.NewGuid().ToString();
                 contentChapter.Content = content;
-                contentChapter.Index = lstBody.IndexOf(content);
+                contentChapter.Index = lstBody?.IndexOf(content);
                 rs.Add(contentChapter);
-
             });
 
-            return rs;
+
+            return rs.OrderBy(x=>x.Index).ToList();
         }
 
-        public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename, Action<double>? updateProgress = null)
+        public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
-            IDbContextTransaction? transaction = null;
             try
             {
 
@@ -157,123 +171,19 @@ namespace DataSharedLibrary
                         return (checkExist.bookId, checkExist.msg);
                     }
 
-                    //var newNovel = new NovelContent();
-                    //newNovel.Title = novelContent?.Title;
-                    //newNovel.URL = novelContent?.URL;
-                    //newNovel.Author = novelContent?.Author;
-                    //newNovel.BookId = novelContent?.BookId ?? Guid.NewGuid().ToString();
-                    //newNovel.MaxChapterCount = novelContent?.MaxChapterCount;
-                    //newNovel.BookName = novelContent?.BookName;
-                    //newNovel.ImageBase64 = novelContent?.ImageBase64;
+                    await this.NovelContents.AddAsync(novelContent!, cancellationToken);
+                    await this.SaveChangesAsync(cancellationToken);
 
-
-                    //var lstChapter = new List<ChapterContent>();
-                    //var lstChapterDetail = new List<ChapterDetailContent>();
-                    //novelContent?.Chapters?.ForEach(chapter =>
-                    //{
-                    //    var newChap = new ChapterContent();
-                    //    newChap.Title = chapter.Title;
-                    //    newChap.IndexChapter = novelContent.Chapters.IndexOf(chapter);
-                    //    newChap.URL = chapter.URL;
-                    //    newChap.BookId = newNovel.BookId;
-                    //    newChap.ChapterId = chapter.ChapterId ?? Guid.NewGuid().ToString();
-                    //    lstChapter.Add(newChap);
-
-                    //    chapter?.Content?.ForEach(con =>
-                    //    {
-                    //        var content = new ChapterDetailContent();
-                    //        content.Id = Guid.NewGuid().ToString();
-                    //        content.ChapterId = newChap.ChapterId;
-                    //        content.BookId = newNovel.BookId;
-                    //        content.Content = con;
-                    //        content.Index = chapter.Content.IndexOf(con);
-                    //        lstChapterDetail.Add(content);
-                    //    });
-
-                    //});
-
-
-                    await this.NovelContents.AddAsync(novelContent);
-                    await this.SaveChangesAsync();
                     updateProgress?.Invoke(99);
-
                     return (novelContent?.BookId, null);
 
                 }
             }
             catch (Exception ex)
             {
-                //transaction?.Rollback();
-                //await this.SaveChangesAsync();
                 return (null, ex.Message);
             }
             return (null, null);
-        }
-
-
-        public async Task<string?> ImportBookNovelModel(NovelContent novelContent)
-        {
-            try
-            {
-                if (novelContent != null)
-                {
-                    var checkExist = await CheckExist(novelContent.BookName);
-
-                    if (checkExist.isExist)
-                    {
-                        return (checkExist.bookId);
-                    }
-
-                    var newNovel = new NovelContent();
-                    newNovel.Title = novelContent.Title;
-                    newNovel.URL = novelContent.URL;
-                    newNovel.Author = novelContent.Author;
-                    newNovel.BookId = novelContent.BookId ?? Guid.NewGuid().ToString();
-                    newNovel.MaxChapterCount = novelContent.MaxChapterCount;
-                    newNovel.BookName = novelContent.BookName;
-                    newNovel.ImageBase64 = novelContent.ImageBase64;
-
-
-                    var lstChapter = new List<ChapterContent>();
-                    var lstChapterDetail = new List<ChapterDetailContent>();
-                    novelContent?.Chapters?.ForEach(chapter =>
-                    {
-                        var newChap = new ChapterContent();
-                        newChap.Title = chapter.Title;
-                        newChap.IndexChapter = novelContent.Chapters.IndexOf(chapter);
-                        newChap.URL = chapter.URL;
-                        newChap.BookId = newNovel.BookId;
-                        newChap.ChapterId = chapter.ChapterId ?? Guid.NewGuid().ToString();
-                        lstChapter.Add(newChap);
-
-                        chapter?.Content?.ForEach(con =>
-                        {
-                            var content = new ChapterDetailContent();
-                            content.Id = Guid.NewGuid().ToString();
-                            content.ChapterId = newChap.ChapterId;
-                            content.BookId = newNovel.BookId;
-                            content.Content = con;
-                            content.Index = chapter.Content.IndexOf(con);
-                            lstChapterDetail.Add(content);
-
-                        });
-
-
-                    });
-
-                    await this.NovelContents.AddRangeAsync(newNovel);
-                    await this.ChapterContents.AddRangeAsync(lstChapter);
-                    await this.ChapterDetailContents.AddRangeAsync(lstChapterDetail);
-
-                    await this.SaveChangesAsync();
-                    return newNovel.BookId;
-
-                }
-            }
-            catch (Exception)
-            {
-            }
-            return null;
         }
 
 
@@ -291,7 +201,7 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<(string? bookId, string? msg)> ImportEpub(string filePath, Action<double>? updateProgress = null)
+        public async Task<(string? bookId, string? msg)> ImportEpub(string filePath, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -301,8 +211,6 @@ namespace DataSharedLibrary
                 var bookAuthors = epub.Author;
 
 
-                //Console.WriteLine($"Book Name: {bookName}");
-                //Console.WriteLine($"Book Authors: {bookAuthors}");
                 var chapters = epub.Navigation;
 
                 var checkExist = await CheckExist(bookName);
@@ -330,11 +238,17 @@ namespace DataSharedLibrary
                 {
                     chapters = chapters.FirstOrDefault()?.NestedItems;
                 }
+
                 novel.MaxChapterCount = chapters?.Count;
 
-                chapters?.ForEach(async chapter =>
+                double maxChap = (double)(chapters?.Count() ?? 0);
+                double chapExcute = 0;
+
+                await Parallel.ForEachAsync(chapters!, cancellationToken, async (chapter, token) =>
                 {
-                    var index = (double)chapters.IndexOf(chapter);
+                    token.ThrowIfCancellationRequested();
+
+                    var index = (double)chapters!.IndexOf(chapter);
                     var novelChapter = new ChapterContent();
                     var chapter_title = chapter.Title;
 
@@ -355,18 +269,23 @@ namespace DataSharedLibrary
 
                     novel.Chapters.Add(novelChapter);
 
-                    var chapterCount = (double)(novel?.Chapters?.Count() ?? 0);
-
-                    var state = index / chapterCount * 100;
-
+                    var state = chapExcute+=1 / maxChap * 100;
 
                     updateProgress?.Invoke(state > 100 ? 0 : state);
-
                 }
                 );
 
-                await this.AddAsync(novel);
-                await this.SaveChangesAsync();
+
+                //chapters?.ForEach(async (chapter) =>
+                //{
+
+
+
+                //}
+                //);
+
+                await this.AddAsync(novel, cancellationToken);
+                await this.SaveChangesAsync(cancellationToken);
                 return (novel?.BookId, null);
             }
             catch (Exception ex)
@@ -377,23 +296,42 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task ExportToEpub(string epubFileName, string? bookId, Action<double>? updateProgress = null)
+        public async Task ExportToEpub(string epubFileName, string? bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
-
             var novel = await GetNovel(bookId, isMergeAuthorName: false);
 
             var doc = new Epub(novel?.BookName, novel?.Author);
 
+            // Thêm ảnh bìa
             var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64 ?? ""));
             doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
 
 
-            novel?.Chapters?.ForEach(async chap =>
+            if (novel?.Chapters?.Count == 0)
             {
-                var index = (double)(novel?.Chapters?.IndexOf(chap) ?? 0);
-                chap = await this.GetContentChapter(chap, novel?.BookName);
-                string content = "";
+                return;
+            }
+            var chapterCount = (double)(novel?.Chapters?.Count() ?? 0);
+            double chapExcute = 0;
 
+            await Parallel.ForEachAsync(novel?.Chapters!, cancellationToken, async (chap, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                using var db = new AppDbContext(_dbPath, new DbContextOptions<AppDbContext>());
+                var updatedChapter = await db.GetContentChapter(chap, novel?.BookName, token);
+                var state = chapExcute+=1 / chapterCount * 100;
+                updateProgress?.Invoke(state > 100 ? 0 : state);
+            });
+
+            chapExcute = 0;
+            
+
+            // Sử dụng vòng lặp foreach thay vì ForEach để hỗ trợ await
+            foreach (var chap in novel?.Chapters ?? new List<ChapterContent>())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string content = "";
                 if (chap?.Content?.Count > 0)
                 {
                     content = string.Join("<br><br>", chap.Content);
@@ -402,20 +340,17 @@ namespace DataSharedLibrary
                 string html = @$"<h2 style=""color:red"">{chap?.Title}</h2><br><br><br>{content}<br><br><br>";
                 doc.AddSection(chap?.Title, html);
 
-                var chapterCount = (double)(novel?.Chapters?.Count() ?? 0);
-
-                var state = index / chapterCount * 100;
-
+                var state = chapExcute += 1 / chapterCount * 100;
                 updateProgress?.Invoke(state > 100 ? 0 : state);
-
-            });
-
-            using (var fs = new FileStream(epubFileName, FileMode.Create))
-            {
-                doc.Export(fs);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Xuất file EPUB
+            using var fs = new FileStream(epubFileName, FileMode.Create) ;
+            doc.Export(fs);
         }
+
 
 
         public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId, Action<double>? updateProgress = null)

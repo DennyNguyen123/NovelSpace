@@ -6,7 +6,6 @@
         xmlns:local="clr-namespace:WpfLibrary"
         mc:Ignorable="d"
         WindowStyle="None"
-        AllowsTransparency="True"
         Background="Transparent"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="False"

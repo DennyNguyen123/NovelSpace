@@ -24,7 +24,6 @@ namespace WpfLibrary
             InitializeComponent();
         }
 
-
         public void UpdateProgressBar(double value)
         {
             // Check if the current thread is different from the UI thread

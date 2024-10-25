@@ -62,7 +62,14 @@ namespace NovelGetConsole
 
             var chap = await db.ChapterContents.FirstOrDefaultAsync();
 
-            var model = await db.ChapterDetailContents.Where(x => x.BookId == chap.BookId & x.ChapterId == chap.ChapterId).ToListAsync();
+            if (chap != null)
+            {
+
+                var x = chap!;
+                return;
+            }
+
+            var model = await db.ChapterDetailContents.Where(x => x.BookId == chap!.BookId & x.ChapterId == chap.ChapterId).ToListAsync();
 
             Console.WriteLine($"Excute sql time {DateTime.Now - startDate}");
 

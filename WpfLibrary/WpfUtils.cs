@@ -98,15 +98,14 @@ namespace WpfLibrary
         }
 
 
-        public static void RunTaskWithSplash(this Window windows, Action<Action<double>> action, Action? doneAction = null
-            , bool isHideMainWindows = true
-            , bool isRunAsync = true
-            , bool isTopMost = false
-            , string? textColor = null, string? backgroudColor = null
-            , bool isDeactiveMainWindow = false
-            )
+        public static void RunTaskWithSplash(this Window windows, Action<Action<double>, CancellationToken> action, Action? doneAction = null
+        , bool isHideMainWindows = true
+        , bool isRunAsync = true
+        , bool isTopMost = false
+        , string? textColor = null, string? backgroudColor = null
+        , bool isDeactiveMainWindow = false
+        )
         {
-
             SplashScreenWindow splash = new SplashScreenWindow();
             splash.Topmost = isTopMost;
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
@@ -115,7 +114,6 @@ namespace WpfLibrary
             {
                 splash.Owner = windows;
             }
-
 
             splash.SetPositionCenterParent(windows);
             splash.Show();
@@ -130,17 +128,39 @@ namespace WpfLibrary
                 windows.IsEnabled = false;
             }
 
-            if (!isRunAsync) { 
+            if (!isRunAsync)
+            {
                 splash.progressBar.Visibility = Visibility.Hidden;
-            } 
+            }
+            else
+            {
+                splash.WindowStyle = WindowStyle.ToolWindow;
+            }
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            var token = cancellationTokenSource.Token;
+
+            splash.Closed += (s, e) => {
+                cancellationTokenSource.Cancel(); // Hủy bỏ action nếu splash bị đóng
+            };
 
             var task = new Task(() =>
             {
-                action(splash.UpdateProgressBar);
+                try
+                {
+                    action(splash.UpdateProgressBar, token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Chuyển về UI thread để hiển thị lại cửa sổ
+                    windows.Dispatcher.Invoke(() => {
+                        windows.Show();  // Thao tác trên UI phải thực hiện trong UI thread
+                    });
+                }
 
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (doneAction != null)
+                    if (doneAction != null && !token.IsCancellationRequested)
                     {
                         doneAction.Invoke();
                     }
@@ -156,11 +176,8 @@ namespace WpfLibrary
                     {
                         windows.IsEnabled = true;
                     }
-
                 });
-
-            });
-
+            }, token);
 
             if (isRunAsync)
             {
@@ -171,6 +188,7 @@ namespace WpfLibrary
                 task.RunSynchronously();
             }
         }
+
 
 
         public static void ShowError(this Window window, string msg)
@@ -243,10 +261,10 @@ namespace WpfLibrary
 
 
 
-        public static Brush ConvertHtmlColorToBrush(string? htmlColor)
+        public static Brush? ConvertHtmlColorToBrush(string? htmlColor)
         {
             BrushConverter converter = new BrushConverter();
-            return (Brush)converter.ConvertFromString(htmlColor ?? "#FFFFFF");
+            return (Brush?)converter.ConvertFromString(htmlColor ?? "#FFFFFF");
         }
 
         public static string? ColorPicker()

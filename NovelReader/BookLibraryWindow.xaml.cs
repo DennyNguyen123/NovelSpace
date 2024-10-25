@@ -39,7 +39,7 @@ namespace NovelReader
         {
             MainWindow = (MainWindow)Owner;
 
-            _dbContext = new AppDbContext(MainWindow.AppConfig._sqlitepath, new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>()); 
+            _dbContext = new AppDbContext(MainWindow.AppConfig._sqlitepath, new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>());
 
             LoadNovels();
             base.OnContentRendered(e);
@@ -121,7 +121,7 @@ namespace NovelReader
                 }
 
                 this.RunTaskWithSplash(
-                    (aUpdateProgressBar) =>
+                    (aUpdateProgressBar, cancel) =>
                     {
 
                         if (ext == ".epub")
@@ -168,8 +168,8 @@ namespace NovelReader
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
                     , isRunAsync: true
-                    , isHideMainWindows: true
-                    , isDeactiveMainWindow : true
+                    , isHideMainWindows: false
+                    , isDeactiveMainWindow: true
                     );
 
 
@@ -197,24 +197,23 @@ namespace NovelReader
                         }
                     }
                     ,
-                    doneAction : () =>
+                    doneAction: () =>
                     {
-                       
+
                     }
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isRunAsync: true
-                    , isHideMainWindows: true
+                    , isRunAsync: false
+                    , isHideMainWindows: false
+                    , isDeactiveMainWindow: true
                 );
 
-                
+
             }
         }
 
         private void ExportItem_Click(object sender, RoutedEventArgs e)
         {
-
-
             if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
             {
                 var filename = WpfUtils.SaveFileFirst("EPUB files (*.epub)|*.epub");
@@ -223,9 +222,9 @@ namespace NovelReader
                 {
 
                     this.RunTaskWithSplash(
-                    action: (aUpdateProgressBar) =>
+                    action: (aUpdateProgressBar, cancel) =>
                     {
-                        _dbContext.ExportToEpub(filename, novel.BookId, aUpdateProgressBar).GetAwaiter().GetResult();
+                        _dbContext.ExportToEpub(filename, novel.BookId, aUpdateProgressBar, cancel).GetAwaiter().GetResult();
                     }
                     , doneAction: () =>
                     {
