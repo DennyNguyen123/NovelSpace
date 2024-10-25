@@ -22,10 +22,9 @@ namespace DataSharedLibrary
             _dbPath = dbPath;
 
             this.Database.Migrate();
-
-
-
         }
+
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

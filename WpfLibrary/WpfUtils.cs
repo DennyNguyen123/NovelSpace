@@ -44,6 +44,12 @@ namespace WpfLibrary
                 splash.Owner = windows;
             }
 
+            if (!isRunAsync)
+            {
+                splash.progressBar.Visibility = Visibility.Hidden;
+            }
+
+
             splash.SetPositionCenterParent(windows);
             splash.Show();
 
@@ -124,6 +130,9 @@ namespace WpfLibrary
                 windows.IsEnabled = false;
             }
 
+            if (!isRunAsync) { 
+                splash.progressBar.Visibility = Visibility.Hidden;
+            } 
 
             var task = new Task(() =>
             {

@@ -225,7 +225,7 @@ namespace NovelReader
         {
 
             this.RunTaskWithSplash(
-            action : (aUpdateProgressBar) =>
+            action : () =>
             {
                 if (Novel != null)
                 {
@@ -238,7 +238,7 @@ namespace NovelReader
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                         this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName).GetAwaiter().GetResult();
-                        aUpdateProgressBar(70);
+                        
                         if (!isFirstLoad)
                         {
                             if (selectedLastItem)
@@ -270,7 +270,7 @@ namespace NovelReader
         public void LoadNovelData()
         {
             this.RunTaskWithSplash(
-            action: (aUpdateProgressBar) =>
+            action: () =>
             {
                 var dbPath = AppConfig._sqlitepath;
                 var bookId = AppConfig.CurrentBookId;
@@ -280,12 +280,10 @@ namespace NovelReader
                     var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
-                aUpdateProgressBar(70);
+                
                 this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
-                aUpdateProgressBar(85);
                 _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
-                aUpdateProgressBar(70);
             }
             , doneAction: () =>
             {

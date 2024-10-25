@@ -26,6 +26,9 @@ namespace NovelReader
 
         public MainWindow MainWindow { get; set; }
 
+
+        public AppDbContext? _dbContext { get; set; }
+
         public BookLibraryWindow()
         {
             InitializeComponent();
@@ -36,14 +39,22 @@ namespace NovelReader
         {
             MainWindow = (MainWindow)Owner;
 
+            _dbContext = new AppDbContext(MainWindow.AppConfig._sqlitepath, new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>()); 
+
             LoadNovels();
             base.OnContentRendered(e);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            _dbContext?.Dispose();
+            base.OnClosed(e);
         }
 
 
         private void LoadNovels()
         {
-            novelContents = MainWindow._AppDbContext.NovelContents.ToList();
+            novelContents = _dbContext.NovelContents.ToList();
 
             CardItemsControl.ItemsSource = novelContents;
         }
@@ -115,11 +126,11 @@ namespace NovelReader
 
                         if (ext == ".epub")
                         {
-                            (bookId, msg) = MainWindow._AppDbContext.ImportEpub(filename, aUpdateProgressBar).GetAwaiter().GetResult();
+                            (bookId, msg) = _dbContext.ImportEpub(filename, aUpdateProgressBar).GetAwaiter().GetResult();
                         }
                         else if (ext == ".novel")
                         {
-                            (bookId, msg) = MainWindow._AppDbContext.ImportBookByJsonModel(filename, aUpdateProgressBar).GetAwaiter().GetResult();
+                            (bookId, msg) = _dbContext.ImportBookByJsonModel(filename, aUpdateProgressBar).GetAwaiter().GetResult();
                         }
 
                     }
@@ -157,7 +168,7 @@ namespace NovelReader
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
                     , isRunAsync: true
-                    , isHideMainWindows: false
+                    , isHideMainWindows: true
                     , isDeactiveMainWindow : true
                     );
 
@@ -172,9 +183,9 @@ namespace NovelReader
             {
 
                 this.RunTaskWithSplash(
-                    action: (aUpdateProgressBar) =>
+                    action: () =>
                     {
-                        var rs = MainWindow._AppDbContext.DeleteNovel(novel.BookId, aUpdateProgressBar).GetAwaiter().GetResult();
+                        var rs = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
 
                         if (!rs.isSuccess)
                         {
@@ -193,7 +204,7 @@ namespace NovelReader
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
                     , isRunAsync: true
-                    , isHideMainWindows: false
+                    , isHideMainWindows: true
                 );
 
                 
@@ -214,14 +225,14 @@ namespace NovelReader
                     this.RunTaskWithSplash(
                     action: (aUpdateProgressBar) =>
                     {
-                        MainWindow._AppDbContext.ExportToEpub(filename, novel.BookId, aUpdateProgressBar).GetAwaiter().GetResult();
+                        _dbContext.ExportToEpub(filename, novel.BookId, aUpdateProgressBar).GetAwaiter().GetResult();
                     }
                     , doneAction: () =>
                     {
                         WpfUtils.OpenFolderAndSelectFile(filename);
                     }
                     , isRunAsync: true
-                    , isHideMainWindows: false
+                    , isHideMainWindows: true
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
                     );
