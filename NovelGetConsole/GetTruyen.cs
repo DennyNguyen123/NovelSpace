@@ -24,22 +24,6 @@ using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace GetTruyen
 {
-    public class TruyenContent
-    {
-        public int? Id { get; set; }
-        public string? Title { get; set; }
-        public string? ImageBase64 { get; set; }
-        public string? BookName { get; set; }
-        public string? Author { get; set; }
-        public string? URL { get; set; }
-        public List<string?>? Content { get; set; }
-
-        public TruyenContent()
-        {
-            this.Content = new List<string?>();
-        }
-    }
-
     public class AppConfig
     {
         public string? HostWeb { get; set; }
@@ -288,7 +272,7 @@ namespace GetTruyen
                 if (trial <= _config.maxTrialGet)
                 {
                     await _log.WriteLog("Retry");
-                    await GetChapter(novel, trial++);
+                    await GetChapter(novel, trial+=1);
                 }
 
             }
@@ -376,7 +360,7 @@ namespace GetTruyen
 
                 if (trial <= _config.maxTrialGet)
                 {
-                    await GetContentDetail(chap, bookSlug, maxChap, trial++, reTitle);
+                    await GetContentDetail(chap, bookSlug, maxChap, trial+=1, reTitle);
                 }
 
             }
@@ -472,7 +456,7 @@ namespace GetTruyen
                 if (trial <= _config.maxTrialGet)
                 {
                     await _log.WriteLog("Restarted");
-                    await GetContentByList(trial++);
+                    await GetContentByList(trial+=1);
                 }
             }
         }
