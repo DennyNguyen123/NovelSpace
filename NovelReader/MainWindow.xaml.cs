@@ -113,6 +113,11 @@ namespace NovelReader
             base.OnContentRendered(e);
         }
 
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            ModifySelectedChapter();
+            base.OnClosing(e);
+        }
 
         protected override void OnClosed(EventArgs e)
         {
@@ -296,12 +301,9 @@ namespace NovelReader
         {
             try
             {
+                NumChapterGoto.Value = _current_reader.CurrentChapter + 1;
+                NumChapterGoto.Maximum= Novel?.MaxChapterCount;
 
-                if (lstContent.Items.Count <= 0)
-                {
-                    this.SelectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                }
-                NumChapterGoto.Value = _current_reader.CurrentChapter;
                 lstContent.SelectedIndex = _current_reader.CurrentLine;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
@@ -313,7 +315,7 @@ namespace NovelReader
 
 
                 //Update Title App
-                this.Title = $"[{SelectedChapter.IndexChapter}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
+                this.Title = $"[{SelectedChapter.IndexChapter??0 + 1}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
 
 
                 //Utils.ClearRAM(false);
