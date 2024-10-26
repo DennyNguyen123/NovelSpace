@@ -138,9 +138,9 @@ namespace DataSharedLibrary
                 return rs;
             }
 
-            await Parallel.ForEachAsync(lstBody!, cancellationToken, async (content, token) =>
+            Parallel.ForEach(lstBody!, (content, token) =>
             {
-                token.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
                 var contentChapter = new ChapterDetailContent();
                 contentChapter.BookId = bookId;
                 contentChapter.ChapterId = chapterId;

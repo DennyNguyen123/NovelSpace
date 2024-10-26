@@ -41,5 +41,25 @@ namespace WpfLibrary
                 this.progressBar.Value = value;
             }
         }
+
+
+
+        public void UpdateStatus(Action<ProgressBar, TextBlock> action)
+        {
+            // Check if the current thread is different from the UI thread
+            if (!this.Dispatcher.CheckAccess())
+            {
+                // If the current thread is not the UI thread, invoke the update on the UI thread
+                this.Dispatcher.Invoke(() =>
+                {
+                    action(this.progressBar, this.txtStatus);
+                });
+            }
+            else
+            {
+                // If the current thread is the UI thread, update directly
+                action(this.progressBar, this.txtStatus);
+            }
+        }
     }
 }

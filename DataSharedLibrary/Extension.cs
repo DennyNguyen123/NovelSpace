@@ -80,6 +80,11 @@ namespace DataSharedLibrary
 
         public static bool IsHtml(this string? input)
         {
+            if (string.IsNullOrEmpty(input))
+            {
+                return false;
+            }
+
             Regex htmlRegex = new Regex("<.*?>");
             return htmlRegex.IsMatch(input);
         }

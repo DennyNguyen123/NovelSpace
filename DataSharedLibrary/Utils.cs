@@ -99,7 +99,7 @@ namespace DataSharedLibrary
         }
 
 
-        public static T JsonFromCompress<T>(string filePath)
+        public static T? JsonFromCompress<T>(string filePath)
         {
             try
             {

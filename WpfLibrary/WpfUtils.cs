@@ -26,7 +26,7 @@ namespace WpfLibrary
     public static class WpfUtils
     {
 
-        public static void RunTaskWithSplash(this Window windows, Action action, Action? doneAction = null
+        public static void RunTaskWithSplash(this Window windows, Action<SplashScreenWindow> action, Action? doneAction = null
             , bool isHideMainWindows = true, bool isRunAsync = true
             , bool isTopMost = false
             , string? textColor = null, string? backgroudColor = null
@@ -65,7 +65,7 @@ namespace WpfLibrary
 
             var task = new Task(() =>
             {
-                action();
+                action(splash);
 
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -98,7 +98,7 @@ namespace WpfLibrary
         }
 
 
-        public static void RunTaskWithSplash(this Window windows, Action<Action<double>, CancellationToken> action, Action? doneAction = null
+        public static void RunTaskWithSplash(this Window windows, Action<SplashScreenWindow, CancellationToken> action, Action? doneAction = null
         , bool isHideMainWindows = true
         , bool isRunAsync = true
         , bool isTopMost = false
@@ -148,7 +148,7 @@ namespace WpfLibrary
             {
                 try
                 {
-                    action(splash.UpdateProgressBar, token);
+                    action(splash, token);
                 }
                 catch (OperationCanceledException)
                 {

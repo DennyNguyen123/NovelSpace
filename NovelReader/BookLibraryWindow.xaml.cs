@@ -121,16 +121,20 @@ namespace NovelReader
                 }
 
                 this.RunTaskWithSplash(
-                    (aUpdateProgressBar, cancel) =>
+                    (splash, cancel) =>
                     {
+                        splash.UpdateStatus((processbar, txtStatus) =>
+                        {
+                            txtStatus.Text = "Importing novel...";
+                        });
 
                         if (ext == ".epub")
                         {
-                            (bookId, msg) = _dbContext.ImportEpub(filename, aUpdateProgressBar).GetAwaiter().GetResult();
+                            (bookId, msg) = _dbContext.ImportEpub(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
                         }
                         else if (ext == ".novel")
                         {
-                            (bookId, msg) = _dbContext.ImportBookByJsonModel(filename, aUpdateProgressBar).GetAwaiter().GetResult();
+                            (bookId, msg) = _dbContext.ImportBookByJsonModel(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
                         }
 
                     }
@@ -181,29 +185,34 @@ namespace NovelReader
         {
             if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
             {
+                bool isSuccess = false;
+                string? msg = "";
 
                 this.RunTaskWithSplash(
-                    action: () =>
+                    action: (splash) =>
                     {
-                        var rs = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
-
-                        if (!rs.isSuccess)
+                        splash.UpdateStatus((processbar, txtStatus) =>
                         {
-                            this.ShowError(rs.msg);
+                            txtStatus.Text = "Deleting novel...";
+                        });
+
+                        (isSuccess,msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+                    }
+                    ,
+                    doneAction: () =>
+                    {
+                        if (!isSuccess)
+                        {
+                            this.ShowError(msg);
                         }
                         else
                         {
                             LoadNovels();
                         }
                     }
-                    ,
-                    doneAction: () =>
-                    {
-
-                    }
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isRunAsync: false
+                    , isRunAsync: true
                     , isHideMainWindows: false
                     , isDeactiveMainWindow: true
                 );
@@ -222,9 +231,14 @@ namespace NovelReader
                 {
 
                     this.RunTaskWithSplash(
-                    action: (aUpdateProgressBar, cancel) =>
+                    action: (splash, cancel) =>
                     {
-                        _dbContext.ExportToEpub(filename, novel.BookId, aUpdateProgressBar, cancel).GetAwaiter().GetResult();
+                        splash.UpdateStatus((processbar, txtStatus) =>
+                        {
+                            txtStatus.Text = "Exporting novel...";
+                        });
+
+                        _dbContext.ExportToEpub(filename, novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
                     }
                     , doneAction: () =>
                     {

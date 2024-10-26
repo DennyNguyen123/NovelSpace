@@ -32,7 +32,7 @@ namespace NovelGetter
         {
             InitializeComponent();
 
-            this.RunTaskWithSplash(() =>
+            this.RunTaskWithSplash((splash) =>
             {
                 _getterAppConfig = GetterAppConfig.Get();
                 _lstHostGetter = HostGetter.GetList(_getterAppConfig?.ListHostSavePath);

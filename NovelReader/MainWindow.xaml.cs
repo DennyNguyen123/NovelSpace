@@ -225,8 +225,13 @@ namespace NovelReader
         {
 
             this.RunTaskWithSplash(
-            action : () =>
+            action: async (splash) =>
             {
+                splash.UpdateStatus((processbar, txtStatus) =>
+                {
+                    txtStatus.Text = "Loading chapter content...";
+                });
+
                 if (Novel != null)
                 {
                     if (Novel.Chapters?.Count > 0)
@@ -237,8 +242,8 @@ namespace NovelReader
                         this.Novel.Chapters.Where(x => x.Content?.Count > 0).ToList().ForEach(r => { r.Content = null; });
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                        this.SelectedChapter = _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName).GetAwaiter().GetResult();
-                        
+                        this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+
                         if (!isFirstLoad)
                         {
                             if (selectedLastItem)
@@ -252,15 +257,20 @@ namespace NovelReader
                         }
 
 
-                        ModifySelectedChapter();
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            lstContent.ItemsSource = this.SelectedChapter.Content;
+                        });
+
                     }
                 }
             }
             , doneAction: () =>
-            {            
+            {
+                ModifySelectedChapter();
             }
             , isHideMainWindows: false
-            , isRunAsync: false
+            , isRunAsync: true
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
             );
@@ -270,8 +280,13 @@ namespace NovelReader
         public void LoadNovelData()
         {
             this.RunTaskWithSplash(
-            action: () =>
+            action: async (splash) =>
             {
+                splash.UpdateStatus((processbar, txtStatus) =>
+                {
+                    txtStatus.Text = "Loading novels...";
+                });
+
                 var dbPath = AppConfig._sqlitepath;
                 var bookId = AppConfig.CurrentBookId;
 
@@ -280,14 +295,19 @@ namespace NovelReader
                     var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
-                
-                this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
-                _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
+                this.Novel = await _AppDbContext.GetNovel(bookId, false);
+
+                _current_reader = await _AppDbContext.GetCurrentReader(bookId);
+
+                var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
+                this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+
             }
             , doneAction: () =>
             {
-                LoadChapterContent(isFirstLoad: true);
+                ModifySelectedChapter();
+                //LoadChapterContent(isFirstLoad: true);
             }
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
