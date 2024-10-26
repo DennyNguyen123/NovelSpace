@@ -273,10 +273,10 @@ namespace NovelReader
             , isRunAsync: true
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
-            , mainWindowsWidth : _appConfig.LastWidth
-            , mainWindowsHeight : _appConfig.LastHeigh
-            , mainWindowsleft : _appConfig.LastLeft
-            , mainWindowsTop : _appConfig.LastTop
+            , mainWindowsWidth: _appConfig.LastWidth
+            , mainWindowsHeight: _appConfig.LastHeigh
+            , mainWindowsleft: _appConfig.LastLeft
+            , mainWindowsTop: _appConfig.LastTop
             );
 
         }
@@ -725,7 +725,10 @@ namespace NovelReader
 
             if (!string.IsNullOrEmpty(AppConfig.VoiceName))
             {
-                speechSynthesizer.SelectVoice(AppConfig.VoiceName);
+                if (speechSynthesizer.GetInstalledVoices().Any(x => x.VoiceInfo.Name == AppConfig.VoiceName))
+                {
+                    speechSynthesizer.SelectVoice(AppConfig.VoiceName);
+                }
             }
 
             this.speechSynthesizer.Rate = this.AppConfig.VoiceRate;
