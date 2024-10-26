@@ -47,6 +47,7 @@ namespace NovelReader
 
         protected override void OnClosed(EventArgs e)
         {
+            MainWindow?.Focus();
             _dbContext?.Dispose();
             base.OnClosed(e);
         }
@@ -54,9 +55,13 @@ namespace NovelReader
 
         private void LoadNovels()
         {
-            novelContents = _dbContext.NovelContents.ToList();
+            novelContents = _dbContext?.NovelContents?.ToList();
 
-            CardItemsControl.ItemsSource = novelContents;
+            if (novelContents != null)
+            {
+                CardItemsControl.ItemsSource = novelContents;
+            }
+
         }
 
 
@@ -196,7 +201,7 @@ namespace NovelReader
                             txtStatus.Text = "Deleting novel...";
                         });
 
-                        (isSuccess,msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+                        (isSuccess, msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
                     }
                     ,
                     doneAction: () =>
@@ -225,7 +230,7 @@ namespace NovelReader
         {
             if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
             {
-                var filename = WpfUtils.SaveFileFirst("EPUB files (*.epub)|*.epub");
+                var filename = WpfUtils.SaveFileFirst($"{novel?.BookName} - {novel?.Author}", "EPUB files (*.epub)|*.epub");
 
                 if (!string.IsNullOrEmpty(filename))
                 {

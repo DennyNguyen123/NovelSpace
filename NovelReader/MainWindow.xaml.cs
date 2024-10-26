@@ -214,7 +214,7 @@ namespace NovelReader
         public void UpdateUI()
         {
             NumChapterGoto.Maximum = Novel?.Chapters?.Count;
-            NumChapterGoto.Value = _current_reader.CurrentChapter;
+            NumChapterGoto.Value = _current_reader?.CurrentChapter;
 
             InitTriggerChangeColor();
 
@@ -300,8 +300,13 @@ namespace NovelReader
 
                 _current_reader = await _AppDbContext.GetCurrentReader(bookId);
 
-                var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+
+                if (_current_reader != null)
+                {
+                    var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
+                    this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+                }
+
 
             }
             , doneAction: () =>
@@ -322,21 +327,24 @@ namespace NovelReader
         {
             try
             {
-                NumChapterGoto.Value = _current_reader.CurrentChapter + 1;
+                NumChapterGoto.Value = _current_reader?.CurrentChapter + 1;
                 NumChapterGoto.Maximum = Novel?.MaxChapterCount;
 
-                lstContent.SelectedIndex = _current_reader.CurrentLine;
+                lstContent.SelectedIndex = _current_reader?.CurrentLine ?? 0;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
 
                 ContinueSpeech();
                 //UpdateHightlightFirst();
-                _AppDbContext.CurrentReader.Update(_current_reader);
-                _AppDbContext.SaveChanges();
+                if (_current_reader != null)
+                {
+                    _AppDbContext.CurrentReader.Update(_current_reader);
+                    _AppDbContext.SaveChanges();
+                }
 
 
                 //Update Title App
-                this.Title = $"[{SelectedChapter.IndexChapter ?? 0 + 1}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
+                this.Title = $"[{SelectedChapter?.IndexChapter ?? 0 + 1}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
 
 
                 //Utils.ClearRAM(false);

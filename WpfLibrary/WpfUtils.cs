@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -62,6 +63,15 @@ namespace WpfLibrary
             {
                 windows.IsEnabled = false;
             }
+
+            splash.Closed += (s, e) => {
+
+                windows.Dispatcher.Invoke(() =>
+                {
+                    windows.Focus();
+                });
+            };
+
 
             var task = new Task(() =>
             {
@@ -141,6 +151,12 @@ namespace WpfLibrary
             var token = cancellationTokenSource.Token;
 
             splash.Closed += (s, e) => {
+
+                windows.Dispatcher.Invoke(() =>
+                {
+                    windows.Focus();
+                });
+
                 cancellationTokenSource.Cancel(); // Hủy bỏ action nếu splash bị đóng
             };
 
@@ -247,6 +263,34 @@ namespace WpfLibrary
             {
                 // Lấy full path của file mà người dùng chọn
                 string filePath = saveFileDialog.FileName;
+
+                if (!File.Exists(filePath))
+                {
+                    System.IO.File.Create(filePath).Close();
+                }
+
+
+                return filePath;
+            }
+            return "";
+        }
+
+
+        public static string SaveFileFirst(string? filenameDefault = null,string filter = "All file (*.*)|*.*")
+        {
+            // Tạo SaveFileDialog
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog()
+            {
+                Filter = filter,
+                FileName = filenameDefault
+            };
+
+
+            // Hiển thị hộp thoại và kiểm tra xem người dùng có chọn đường dẫn hay không
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                // Lấy full path của file mà người dùng chọn
+                string filePath = saveFileDialog?.FileName??"";
 
                 if (!File.Exists(filePath))
                 {
