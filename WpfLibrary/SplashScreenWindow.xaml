@@ -9,12 +9,12 @@
         Background="Transparent"
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="False"
-        Height="200" Width="400"
+        Height="70" Width="250"
         >
     <Grid Background="Transparent">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock x:Name="txtStatus" Text="Loading, please wait..." FontSize="24"/>
-            <ProgressBar x:Name="progressBar" Maximum="100" Minimum="0" Cursor="Wait" Width="200" Height="20" IsIndeterminate="False"/>
+            <ProgressBar x:Name="progressBar" Maximum="100" Minimum="0" Cursor="Wait" Width="200" Height="20" Margin="0,15,0,0" IsIndeterminate="False"/>
         </StackPanel>
     </Grid>
 </Window>

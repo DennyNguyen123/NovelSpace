@@ -273,6 +273,10 @@ namespace NovelReader
             , isRunAsync: true
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
+            , mainWindowsWidth : _appConfig.LastWidth
+            , mainWindowsHeight : _appConfig.LastHeigh
+            , mainWindowsleft : _appConfig.LastLeft
+            , mainWindowsTop : _appConfig.LastTop
             );
 
         }
@@ -316,6 +320,10 @@ namespace NovelReader
             }
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
+            , mainWindowsWidth: _appConfig.LastWidth
+            , mainWindowsHeight: _appConfig.LastHeigh
+            , mainWindowsleft: _appConfig.LastLeft
+            , mainWindowsTop: _appConfig.LastTop
             )
             ;
 

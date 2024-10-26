@@ -32,6 +32,10 @@ namespace WpfLibrary
             , bool isTopMost = false
             , string? textColor = null, string? backgroudColor = null
             , bool isDeactiveMainWindow = false
+            , double? mainWindowsWidth = null
+            , double? mainWindowsHeight = null
+            , double? mainWindowsleft = null
+            , double? mainWindowsTop = null
             )
         {
 
@@ -51,7 +55,10 @@ namespace WpfLibrary
             }
 
 
-            splash.SetPositionCenterParent(windows);
+            //splash.SetPositionCenterParent(windows);
+            splash.Left = mainWindowsleft ?? windows.Left;
+            splash.Width = mainWindowsWidth ?? windows.Width;
+            splash.Top = (mainWindowsTop ?? windows.Top) + (mainWindowsHeight ?? windows.Height / 2);
             splash.Show();
 
             if (isHideMainWindows)
@@ -125,7 +132,11 @@ namespace WpfLibrary
                 splash.Owner = windows;
             }
 
-            splash.SetPositionCenterParent(windows);
+            splash.Left = windows.Left;
+            splash.Width = windows.Width;
+            splash.Top = windows.Top + (windows.Height/2);
+
+            //splash.SetPositionCenterParent(windows);
             splash.Show();
 
             if (isHideMainWindows)

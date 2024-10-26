@@ -84,8 +84,11 @@ namespace DataSharedLibrary
             return novel;
         }
 
-        public async Task<ChapterContent> GetContentChapter(ChapterContent chapter, string? bookName,CancellationToken cancellationToken = default)
+        public async Task<ChapterContent?> GetContentChapter(ChapterContent chapter, string? bookName, CancellationToken cancellationToken = default)
         {
+            //using var db = new AppDbContext(_dbPath, new DbContextOptions<AppDbContext>());
+
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var content = await this.ChapterDetailContents.AsNoTracking()
@@ -113,12 +116,13 @@ namespace DataSharedLibrary
 
             chapter.Content = cleanedItems;
             return chapter;
+
         }
 
 
-        public static async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId,CancellationToken cancellationToken = default)
+        public static async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested ();
+            cancellationToken.ThrowIfCancellationRequested();
             var rs = new List<ChapterDetailContent>();
 
             content = content?.Replace("<br>", "\r\n").Replace("<br/>", "\r\n").Replace("</p>", "\r\n").Replace("<p>", "");
@@ -151,7 +155,7 @@ namespace DataSharedLibrary
             });
 
 
-            return rs.OrderBy(x=>x.Index).ToList();
+            return rs.OrderBy(x => x.Index).ToList();
         }
 
         public async Task<(string? bookId, string? msg)> ImportBookByJsonModel(string filename, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
@@ -269,7 +273,7 @@ namespace DataSharedLibrary
 
                     novel.Chapters.Add(novelChapter);
 
-                    var state = chapExcute+=1 / maxChap * 100;
+                    var state = chapExcute += 1 / maxChap * 100;
 
                     updateProgress?.Invoke(state > 100 ? 0 : state);
                 }
@@ -319,12 +323,12 @@ namespace DataSharedLibrary
                 token.ThrowIfCancellationRequested();
                 using var db = new AppDbContext(_dbPath, new DbContextOptions<AppDbContext>());
                 var updatedChapter = await db.GetContentChapter(chap, novel?.BookName, token);
-                var state = chapExcute+=1 / chapterCount * 100;
+                var state = chapExcute += 1 / chapterCount * 100;
                 updateProgress?.Invoke(state > 100 ? 0 : state);
             });
 
             chapExcute = 0;
-            
+
 
             // Sử dụng vòng lặp foreach thay vì ForEach để hỗ trợ await
             foreach (var chap in novel?.Chapters ?? new List<ChapterContent>())
@@ -347,7 +351,7 @@ namespace DataSharedLibrary
             cancellationToken.ThrowIfCancellationRequested();
 
             // Xuất file EPUB
-            using var fs = new FileStream(epubFileName, FileMode.Create) ;
+            using var fs = new FileStream(epubFileName, FileMode.Create);
             doc.Export(fs);
         }
 
