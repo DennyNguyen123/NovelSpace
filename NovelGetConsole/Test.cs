@@ -138,7 +138,11 @@ namespace NovelGetConsole
             novel.MaxChapterCount = chapters?.Count;
             novel.BookId = Guid.NewGuid().ToString();
             novel.Chapters = new List<ChapterContent>();
-            novel.ImageBase64 = Convert.ToBase64String(epub.CoverImage);
+            if (epub?.CoverImage != null)
+            {
+                novel.ImageBase64 = Convert.ToBase64String(epub.CoverImage);
+            }
+
 
             chapters?.ForEach(chapter =>
             {

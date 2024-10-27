@@ -24,7 +24,7 @@ namespace WpfLibrary
         private const int WM_SYSKEYUP = 0x0105;
 
         // Sự kiện khi nhận phím media
-        public event Action<Key> MediaKeyPressed;
+        public event Action<Key>? MediaKeyPressed;
 
         public KeyboardHook()
         {
@@ -35,7 +35,7 @@ namespace WpfLibrary
         private IntPtr SetHook(LowLevelKeyboardProc proc)
         {
             using (Process curProcess = Process.GetCurrentProcess())
-            using (ProcessModule curModule = curProcess.MainModule)
+            using (ProcessModule curModule = curProcess.MainModule!)
             {
                 return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
             }

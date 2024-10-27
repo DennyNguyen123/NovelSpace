@@ -65,17 +65,17 @@ namespace GetTruyen
 
     public class GetTruyen
     {
-        protected IPlaywright? _playwright;
-        protected IBrowser _browser;
-        protected IBrowserContext _browserContext;
-        protected IAPIRequestContext _apiContext;
+        protected IPlaywright? _playwright = null;
+        protected IBrowser? _browser = null;
+        protected IBrowserContext? _browserContext = null;
+        protected IAPIRequestContext? _apiContext = null;
 
 
         protected PageGotoOptions _pageGotoOption;
 
         protected bool isLogin = false;
 
-        public AppConfig _config;
+        public AppConfig? _config = null;
         protected string _config_path = "appconf.json";
 
         protected LogWithConsole _log { get; set; }
@@ -94,6 +94,12 @@ namespace GetTruyen
             else
             {
                 var config = System.Text.Json.JsonSerializer.Deserialize<AppConfig>(conf);
+
+                if (config == null)
+                {
+                    config = new AppConfig();
+                }
+
                 _config = config;
             }
 
@@ -118,14 +124,14 @@ namespace GetTruyen
             _playwright = await Playwright.CreateAsync();
             _browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                ExecutablePath = _config.pathBrowser,
-                Headless = _config.isHeadless // Chạy chế độ headless
+                ExecutablePath = _config?.pathBrowser,
+                Headless = _config?.isHeadless // Chạy chế độ headless
             });
             _apiContext = await _playwright.APIRequest.NewContextAsync();
 
 
             // Define mobile emulation settings (e.g., for an iPhone 11)
-            var device = _playwright.Devices[_config.browserDevice ?? "iPhone 11"];
+            var device = _playwright.Devices[_config?.browserDevice ?? "iPhone 11"];
 
 
             // Create a new browser context with mobile settings
@@ -143,14 +149,18 @@ namespace GetTruyen
         }
 
 
-        private async Task<IPage> NewPage(string url)
+        private async Task<IPage?> NewPage(string url)
         {
             // Open a new page in mobile emulation
+            if (_browserContext == null)
+            {
+                return null;
+            }
             var page = await _browserContext.NewPageAsync();
             try
             {
                 await page.GotoAsync(url, options: _pageGotoOption);
-                await Task.Delay(_config.delayTime);
+                await Task.Delay(_config?.delayTime??3000);
             }
             catch (Exception)
             {
@@ -161,7 +171,12 @@ namespace GetTruyen
 
         private async Task LoginFirst()
         {
-            var page = await NewPage($"{_config.HostWeb}");
+            var page = await NewPage($"{_config?.HostWeb}");
+
+            if (page == null)
+            {
+                return;
+            }
 
             await Login(page, null);
 
@@ -173,6 +188,10 @@ namespace GetTruyen
         {
             try
             {
+                if (page == null)
+                {
+                    return;
+                }
 
                 if (!isLogin)
                 {
@@ -183,10 +202,10 @@ namespace GetTruyen
                 if (page.Url == "https://docfull.vn/login/")
                 {
                     var username = page.Locator("xpath=//html/body/div/div/div/div[1]/form/div[1]/input");
-                    await username.FillAsync(_config.usrGet ?? "");
+                    await username.FillAsync(_config?.usrGet ?? "");
 
                     var pwd = page.Locator("xpath=//html/body/div/div/div/div[1]/form/div[2]/input");
-                    await pwd.FillAsync(_config.pwdGet ?? "");
+                    await pwd.FillAsync(_config?.pwdGet ?? "");
 
                     var loginbtn = page.Locator("xpath=//html/body/div/div/div/div[1]/form/button");
                     await loginbtn.ClickAsync();
@@ -212,7 +231,7 @@ namespace GetTruyen
             }
         }
 
-        public async Task<List<NovelContent>?> GetNovelsFromJson(string input)
+        public List<NovelContent>? GetNovelsFromJson(string input)
         {
             var json = JObject.Parse(input);
 
@@ -241,7 +260,13 @@ namespace GetTruyen
             try
             {
                 //Get chapters
-                var urlAllChapter = $"{_config.HostAPI}/chapters/{novel.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
+                var urlAllChapter = $"{_config?.HostAPI}/chapters/{novel.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
+                
+                if (_apiContext == null)
+                {
+                    return;
+                }
+                
                 var req = await _apiContext.GetAsync(urlAllChapter);
 
                 if (!req.Ok)
@@ -269,7 +294,7 @@ namespace GetTruyen
             catch (Exception ex)
             {
                 await _log.WriteLog(ex.Message);
-                if (trial <= _config.maxTrialGet)
+                if (trial <= _config?.maxTrialGet)
                 {
                     await _log.WriteLog("Retry");
                     await GetChapter(novel, trial+=1);
@@ -287,6 +312,10 @@ namespace GetTruyen
             string host = "https://api.docfull.vn/api/v1";
             string web = $"{host}/novels/categoies/{cateId}?page=1&limit=9999999";
 
+            if (_apiContext == null)
+            {
+                return;
+            }
 
             var response = await _apiContext.GetAsync(web);
 
@@ -295,12 +324,12 @@ namespace GetTruyen
                 return;
             }
 
-            var results = await GetNovelsFromJson(await response.TextAsync());
+            var results = GetNovelsFromJson(await response.TextAsync());
 
 
             var jsonOut = JsonSerializer.Serialize(results);
 
-            string fileName = $"{_config.outputPath}//list-novel.json";
+            string fileName = $"{_config?.outputPath}//list-novel.json";
 
             await File.WriteAllTextAsync(fileName, jsonOut);
 
@@ -312,8 +341,11 @@ namespace GetTruyen
         {
             await _log.WriteLog("Getting novels...");
 
-            string web = $"{_config.HostAPI}{_config.UrlGetListChapter}";
+            string web = $"{_config?.HostAPI}{_config?.UrlGetListChapter}";
 
+            if (_apiContext == null) {
+                return null;
+            }
 
             var response = await _apiContext.GetAsync(web);
 
@@ -322,12 +354,12 @@ namespace GetTruyen
                 return null;
             }
 
-            var results = await GetNovelsFromJson(await response.TextAsync());
+            var results = GetNovelsFromJson(await response.TextAsync());
 
 
             var jsonOut = JsonSerializer.Serialize(results);
 
-            string fileName = $"{_config.outputPath}//list-novel.json";
+            string fileName = $"{_config?.outputPath}//list-novel.json";
 
             await File.WriteAllTextAsync(fileName, jsonOut);
             await _log.WriteLog("Get novels completed");
@@ -339,8 +371,12 @@ namespace GetTruyen
         {
             try
             {
-                var link = $"{_config.HostWeb}/{bookSlug}/{chap.Slug}";
+                var link = $"{_config?.HostWeb}/{bookSlug}/{chap.Slug}";
                 var tab = await NewPage(link);
+
+                if (tab == null) {
+                    return;
+                }
 
                 await Login(tab, link);
 
@@ -358,7 +394,7 @@ namespace GetTruyen
             {
                 await _log.WriteLog($"[{reTitle}][{bookSlug}] Failed chapter {chap.IndexChapter} - {chap.Slug}");
 
-                if (trial <= _config.maxTrialGet)
+                if (trial <= _config?.maxTrialGet)
                 {
                     await GetContentDetail(chap, bookSlug, maxChap, trial+=1, reTitle);
                 }
@@ -373,7 +409,7 @@ namespace GetTruyen
             try
             {
 
-                var filePath = $"{_config.outputPath}//list-novel.json";
+                var filePath = $"{_config?.outputPath}//list-novel.json";
 
                 var lstNovel = new List<NovelContent>();
 
@@ -417,10 +453,10 @@ namespace GetTruyen
                     }
                     await _log.WriteLog($"[{reTitle}] Get novel: {novel?.BookName} - {novel?.MaxChapterCount} chapters");
 
-                    await GetChapter(novel);
+                    await GetChapter(novel!);
 
 
-                    novel.ImageBase64 = await Utils.DownloadImageAsBase64(novel?.ImageBase64);
+                    novel!.ImageBase64 = await Utils.DownloadImageAsBase64(novel?.ImageBase64);
 
 
                     var parallelOptions = new ParallelOptions
@@ -428,7 +464,7 @@ namespace GetTruyen
                         MaxDegreeOfParallelism = _config?.maxThread ?? 5
                     };
 
-                    await Parallel.ForEachAsync(novel?.Chapters, parallelOptions, async (chapter, cancellationToken) =>
+                    await Parallel.ForEachAsync(novel?.Chapters!, parallelOptions, async (chapter, cancellationToken) =>
                     {
                         await GetContentDetail(chapter, novel?.Slug, maxChap: novel?.MaxChapterCount, reTitle: reTitle);
                     });
@@ -453,7 +489,7 @@ namespace GetTruyen
             catch (Exception ex)
             {
                 await _log.WriteLog(ex.Message);
-                if (trial <= _config.maxTrialGet)
+                if (trial <= _config?.maxTrialGet)
                 {
                     await _log.WriteLog("Restarted");
                     await GetContentByList(trial+=1);
