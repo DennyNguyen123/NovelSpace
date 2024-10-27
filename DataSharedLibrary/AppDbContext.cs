@@ -369,6 +369,9 @@ namespace DataSharedLibrary
                 updateProgress?.Invoke(70);
                 await this.SaveChangesAsync();
                 updateProgress?.Invoke(90);
+                // Run the VACUUM command
+                this.Database.ExecuteSqlRaw("VACUUM");
+                updateProgress?.Invoke(99);
                 return (true, null);
 
             }
