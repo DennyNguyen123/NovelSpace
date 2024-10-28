@@ -23,108 +23,33 @@ using MessageBox = System.Windows.MessageBox;
 namespace WpfLibrary
 {
 
-
     public static class WpfUtils
     {
 
-        public static void RunTaskWithSplash(this Window windows, Action<SplashScreenWindow> action, Action? doneAction = null
-            , bool isHideMainWindows = true, bool isRunAsync = true
-            , bool isTopMost = false
-            , string? textColor = null, string? backgroudColor = null
-            , bool isDeactiveMainWindow = false
-            , double? mainWindowsWidth = null
-            , double? mainWindowsHeight = null
-            , double? mainWindowsleft = null
-            , double? mainWindowsTop = null
-            )
-        {
-
-            SplashScreenWindow splash = new SplashScreenWindow();
-            splash.Topmost = isTopMost;
-            splash.progressBar.IsIndeterminate = true;
-            splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
-            splash.Background = ConvertHtmlColorToBrush(backgroudColor);
-            if (windows.IsLoaded)
-            {
-                splash.Owner = windows;
-            }
-
-            if (!isRunAsync)
-            {
-                splash.progressBar.Visibility = Visibility.Hidden;
-            }
-
-
-            //splash.SetPositionCenterParent(windows);
-            splash.Left = mainWindowsleft ?? windows.Left;
-            splash.Width = mainWindowsWidth ?? windows.Width;
-            splash.Top = (mainWindowsTop ?? windows.Top) + (mainWindowsHeight ?? windows.Height / 2);
-            splash.Show();
-
-            if (isHideMainWindows)
-            {
-                windows.Hide();
-            }
-
-            if (isDeactiveMainWindow)
-            {
-                windows.IsEnabled = false;
-            }
-
-            splash.Closed += (s, e) => {
-
-                windows.Dispatcher.Invoke(() =>
-                {
-                    windows.Focus();
-                });
-            };
-
-
-            var task = new Task(() =>
-            {
-                action(splash);
-
-                System.Windows.Application.Current.Dispatcher.Invoke(() =>
-                {
-                    splash.Close(); // Đóng SplashScreen
-
-                    doneAction?.Invoke();
-                    if (isHideMainWindows)
-                    {
-                        windows.Show();     // Hiển thị MainWindow
-                    }
-
-                    if (isDeactiveMainWindow)
-                    {
-                        windows.IsEnabled = true;
-                    }
-
-                });
-
-            });
-
-
-            if (isRunAsync)
-            {
-                task.Start();
-            }
-            else
-            {
-                task.RunSynchronously();
-            }
-        }
-
-
-        public static void RunTaskWithSplash(this Window windows, Action<SplashScreenWindow, CancellationToken> action, Action? doneAction = null
+        /// <summary>
+        /// Splash can cancel
+        /// </summary>
+        /// <param name="windows"></param>
+        /// <param name="action"></param>
+        /// <param name="doneAction"></param>
+        /// <param name="isHideMainWindows"></param>
+        /// <param name="isRunAsync"></param>
+        /// <param name="isTopMost"></param>
+        /// <param name="textColor"></param>
+        /// <param name="backgroudColor"></param>
+        /// <param name="isDeactiveMainWindow"></param>
+        public static void RunTaskWithSplash(this Window windows, Action<SplashScreenWindow, CancellationToken> action
         , bool isHideMainWindows = true
-        , bool isRunAsync = true
         , bool isTopMost = false
         , string? textColor = null, string? backgroudColor = null
-        , bool isDeactiveMainWindow = false
+        , bool IsIndeterminate = false
         )
         {
-            SplashScreenWindow splash = new SplashScreenWindow();
+            SplashScreenWindow splash = new SplashScreenWindow(isAllowsTransparency: IsIndeterminate);
             splash.Topmost = isTopMost;
+            splash.progressBar.IsIndeterminate = IsIndeterminate;
+            splash.WindowStyle = IsIndeterminate ? WindowStyle.None : WindowStyle.ToolWindow;
+
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
             splash.Background = ConvertHtmlColorToBrush(backgroudColor);
             if (windows.IsLoaded)
@@ -132,36 +57,18 @@ namespace WpfLibrary
                 splash.Owner = windows;
             }
 
-            splash.Left = windows.Left;
-            splash.Width = windows.Width;
-            splash.Top = windows.Top + (windows.Height/2);
-
-            //splash.SetPositionCenterParent(windows);
             splash.Show();
 
             if (isHideMainWindows)
             {
                 windows.Hide();
-            }
-
-            if (isDeactiveMainWindow)
-            {
-                windows.IsEnabled = false;
-            }
-
-            if (!isRunAsync)
-            {
-                splash.progressBar.Visibility = Visibility.Hidden;
-            }
-            else
-            {
-                splash.WindowStyle = WindowStyle.ToolWindow;
             }
 
             var cancellationTokenSource = new CancellationTokenSource();
             var token = cancellationTokenSource.Token;
 
-            splash.Closed += (s, e) => {
+            splash.Closed += (s, e) =>
+            {
 
                 windows.Dispatcher.Invoke(() =>
                 {
@@ -171,7 +78,7 @@ namespace WpfLibrary
                 cancellationTokenSource.Cancel(); // Hủy bỏ action nếu splash bị đóng
             };
 
-            var task = new Task(() =>
+            Task.Run(() =>
             {
                 try
                 {
@@ -180,17 +87,14 @@ namespace WpfLibrary
                 catch (OperationCanceledException)
                 {
                     // Chuyển về UI thread để hiển thị lại cửa sổ
-                    windows.Dispatcher.Invoke(() => {
+                    windows.Dispatcher.Invoke(() =>
+                    {
                         windows.Show();  // Thao tác trên UI phải thực hiện trong UI thread
                     });
                 }
 
                 System.Windows.Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if (doneAction != null && !token.IsCancellationRequested)
-                    {
-                        doneAction.Invoke();
-                    }
 
                     splash.Close(); // Đóng SplashScreen
 
@@ -198,22 +102,8 @@ namespace WpfLibrary
                     {
                         windows.Show();     // Hiển thị MainWindow
                     }
-
-                    if (isDeactiveMainWindow)
-                    {
-                        windows.IsEnabled = true;
-                    }
                 });
             }, token);
-
-            if (isRunAsync)
-            {
-                task.Start();
-            }
-            else
-            {
-                task.RunSynchronously();
-            }
         }
 
 
@@ -287,7 +177,7 @@ namespace WpfLibrary
         }
 
 
-        public static string SaveFileFirst(string? filenameDefault = null,string filter = "All file (*.*)|*.*")
+        public static string SaveFileFirst(string? filenameDefault = null, string filter = "All file (*.*)|*.*")
         {
             // Tạo SaveFileDialog
             Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog()
@@ -301,7 +191,7 @@ namespace WpfLibrary
             if (saveFileDialog.ShowDialog() == true)
             {
                 // Lấy full path của file mà người dùng chọn
-                string filePath = saveFileDialog?.FileName??"";
+                string filePath = saveFileDialog?.FileName ?? "";
 
                 if (!File.Exists(filePath))
                 {

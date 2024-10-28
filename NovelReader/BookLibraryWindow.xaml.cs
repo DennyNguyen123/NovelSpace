@@ -35,6 +35,8 @@ namespace NovelReader
         }
 
 
+
+
         protected override void OnContentRendered(EventArgs e)
         {
             MainWindow = (MainWindow)Owner;
@@ -142,43 +144,42 @@ namespace NovelReader
                             (bookId, msg) = _dbContext.ImportBookByJsonModel(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
                         }
 
-                    }
-                    , doneAction: () =>
-                    {
 
-                        if (!string.IsNullOrWhiteSpace(msg) || string.IsNullOrWhiteSpace(bookId))
+                        this.Dispatcher.Invoke(() =>
                         {
-                            this.ShowError(msg);
-                        }
-                        else
-                        {
-                            string existMsg = string.IsNullOrEmpty(msg) ? "" : "Already exist - ";
-                            this.ShowYesNoMessageBox($"{existMsg}Do you want open this book", "Open Book?",
+                            if (!string.IsNullOrWhiteSpace(msg) || string.IsNullOrWhiteSpace(bookId))
+                            {
+                                this.ShowError(msg);
+                            }
+                            else
+                            {
+                                string existMsg = string.IsNullOrEmpty(msg) ? "" : "Already exist - ";
+                                this.ShowYesNoMessageBox($"{existMsg}Do you want open this book", "Open Book?",
 
-                                yesAction: () =>
-                                {
-                                    MainWindow.AppConfig.CurrentBookId = bookId;
-                                    MainWindow.AppConfig.Save();
-                                    MainWindow.LoadNovelData();
-                                    MainWindow.UpdateUI();
-                                    this.Close();
-                                }
-                                ,
-                                noAction: () =>
-                                {
-                                    LoadNovels();
-                                }
+                                    yesAction: () =>
+                                    {
+                                        MainWindow.AppConfig.CurrentBookId = bookId;
+                                        MainWindow.AppConfig.Save();
+                                        MainWindow.LoadNovelData();
+                                        MainWindow.UpdateUI();
+                                        this.Close();
+                                    }
+                                    ,
+                                    noAction: () =>
+                                    {
+                                        LoadNovels();
+                                    }
 
-                            );
+                                );
 
-                        }
+                            }
+                        });
+
                     }
-
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isRunAsync: true
                     , isHideMainWindows: false
-                    , isDeactiveMainWindow: true
+                    , IsIndeterminate: false
                     );
 
 
@@ -194,7 +195,7 @@ namespace NovelReader
                 string? msg = "";
 
                 this.RunTaskWithSplash(
-                    action: (splash) =>
+                    action: (splash, cancel) =>
                     {
                         splash.UpdateStatus((processbar, txtStatus) =>
                         {
@@ -202,24 +203,24 @@ namespace NovelReader
                         });
 
                         (isSuccess, msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
-                    }
-                    ,
-                    doneAction: () =>
-                    {
-                        if (!isSuccess)
+
+                        this.Dispatcher.Invoke(() =>
                         {
-                            this.ShowError(msg);
-                        }
-                        else
-                        {
-                            LoadNovels();
-                        }
+                            if (!isSuccess)
+                            {
+                                this.ShowError(msg);
+                            }
+                            else
+                            {
+                                LoadNovels();
+                            }
+                        });
+
                     }
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isRunAsync: true
                     , isHideMainWindows: false
-                    , isDeactiveMainWindow: true
+                    , IsIndeterminate: true
                 );
 
 
@@ -240,19 +241,21 @@ namespace NovelReader
                     {
                         splash.UpdateStatus((processbar, txtStatus) =>
                         {
-                            txtStatus.Text = "Exporting novel...";
+                            txtStatus.Text = $"Exporting novel {novel?.BookName}...";
+                            splash.SizeToContent = SizeToContent.WidthAndHeight;
                         });
 
                         _dbContext.ExportToEpub(filename, novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
+
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            WpfUtils.OpenFolderAndSelectFile(filename);
+                        });
                     }
-                    , doneAction: () =>
-                    {
-                        WpfUtils.OpenFolderAndSelectFile(filename);
-                    }
-                    , isRunAsync: true
                     , isHideMainWindows: true
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                    , IsIndeterminate : false
                     );
 
                 }

@@ -225,7 +225,7 @@ namespace NovelReader
         {
 
             this.RunTaskWithSplash(
-            action: async (splash) =>
+            action: async (splash, cancel) =>
             {
                 splash.UpdateStatus((processbar, txtStatus) =>
                 {
@@ -260,23 +260,16 @@ namespace NovelReader
                         this.Dispatcher.Invoke(() =>
                         {
                             lstContent.ItemsSource = this.SelectedChapter.Content;
+                            ModifySelectedChapter();
                         });
 
                     }
                 }
             }
-            , doneAction: () =>
-            {
-                ModifySelectedChapter();
-            }
             , isHideMainWindows: false
-            , isRunAsync: true
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
-            , mainWindowsWidth: _appConfig.LastWidth
-            , mainWindowsHeight: _appConfig.LastHeigh
-            , mainWindowsleft: _appConfig.LastLeft
-            , mainWindowsTop: _appConfig.LastTop
+            , IsIndeterminate : true
             );
 
         }
@@ -284,7 +277,7 @@ namespace NovelReader
         public void LoadNovelData()
         {
             this.RunTaskWithSplash(
-            action: async (splash) =>
+            action: async (splash, cancel) =>
             {
                 splash.UpdateStatus((processbar, txtStatus) =>
                 {
@@ -305,25 +298,24 @@ namespace NovelReader
                 _current_reader = await _AppDbContext.GetCurrentReader(bookId);
 
 
-                if (_current_reader != null)
+                if (_current_reader != null & this.Novel != null)
                 {
                     var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
                     this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        lstContent.ItemsSource = this.SelectedChapter.Content;
+                        ModifySelectedChapter();
+                    });
                 }
 
 
-            }
-            , doneAction: () =>
-            {
-                ModifySelectedChapter();
-                //LoadChapterContent(isFirstLoad: true);
+
             }
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
-            , mainWindowsWidth: _appConfig.LastWidth
-            , mainWindowsHeight: _appConfig.LastHeigh
-            , mainWindowsleft: _appConfig.LastLeft
-            , mainWindowsTop: _appConfig.LastTop
+            , IsIndeterminate : true
             )
             ;
 

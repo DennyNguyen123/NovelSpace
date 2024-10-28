@@ -19,8 +19,10 @@ namespace WpfLibrary
     /// </summary>
     public partial class SplashScreenWindow : Window
     {
-        public SplashScreenWindow()
+        public SplashScreenWindow(bool isAllowsTransparency = true)
         {
+            this.AllowsTransparency = isAllowsTransparency;
+            
             InitializeComponent();
         }
 

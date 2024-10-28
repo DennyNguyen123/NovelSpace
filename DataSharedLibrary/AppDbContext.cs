@@ -120,7 +120,7 @@ namespace DataSharedLibrary
         }
 
 
-        public static async Task<List<ChapterDetailContent>> GenerateChapterContent(string? content, string? bookId, string? chapterId, CancellationToken cancellationToken = default)
+        public static List<ChapterDetailContent> GenerateChapterContent(string? content, string? bookId, string? chapterId, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var rs = new List<ChapterDetailContent>();
@@ -144,7 +144,11 @@ namespace DataSharedLibrary
 
             Parallel.ForEach(lstBody!, (content, token) =>
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    token.Stop();
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
                 var contentChapter = new ChapterDetailContent();
                 contentChapter.BookId = bookId;
                 contentChapter.ChapterId = chapterId;
@@ -248,10 +252,12 @@ namespace DataSharedLibrary
                 double maxChap = (double)(chapters?.Count() ?? 0);
                 double chapExcute = 0;
 
-                await Parallel.ForEachAsync(chapters!, cancellationToken, async (chapter, token) =>
+                Parallel.ForEach(chapters!, (chapter, token) =>
                 {
-                    token.ThrowIfCancellationRequested();
-
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        token.Stop();
+                    }
                     var index = (double)chapters!.IndexOf(chapter);
                     var novelChapter = new ChapterContent();
                     var chapter_title = chapter.Title;
@@ -269,7 +275,7 @@ namespace DataSharedLibrary
 
                     var body = htmlDoc.DocumentNode.SelectSingleNode("//body").InnerHtml;
 
-                    novelChapter.ChapterDetailContents = await GenerateChapterContent(body, novelChapter.BookId, novelChapter.ChapterId);
+                    novelChapter.ChapterDetailContents = GenerateChapterContent(body, novelChapter.BookId, novelChapter.ChapterId);
 
                     novel.Chapters.Add(novelChapter);
 
@@ -278,15 +284,6 @@ namespace DataSharedLibrary
                     updateProgress?.Invoke(state > 100 ? 0 : state);
                 }
                 );
-
-
-                //chapters?.ForEach(async (chapter) =>
-                //{
-
-
-
-                //}
-                //);
 
                 await this.AddAsync(novel, cancellationToken);
                 await this.SaveChangesAsync(cancellationToken);

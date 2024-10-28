@@ -10,6 +10,7 @@
         WindowStartupLocation="CenterScreen"
         ShowInTaskbar="False"
         Height="70" Width="250"
+        SizeToContent="WidthAndHeight"
         >
     <Grid Background="Transparent">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
