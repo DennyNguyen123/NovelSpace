@@ -209,8 +209,6 @@ namespace NovelReader
         #endregion Key Hook
 
         #region Function Logical
-
-
         public void UpdateUI()
         {
             NumChapterGoto.Maximum = Novel?.Chapters?.Count;
@@ -259,6 +257,7 @@ namespace NovelReader
 
                         this.Dispatcher.Invoke(() =>
                         {
+                            txtChapterName.Text = this.SelectedChapter.Title;
                             lstContent.ItemsSource = this.SelectedChapter.Content;
                             ModifySelectedChapter();
                         });
@@ -305,6 +304,7 @@ namespace NovelReader
 
                     this.Dispatcher.Invoke(() =>
                     {
+                        txtChapterName.Text = this.SelectedChapter.Title;
                         lstContent.ItemsSource = this.SelectedChapter.Content;
                         ModifySelectedChapter();
                     });
@@ -320,8 +320,6 @@ namespace NovelReader
             ;
 
         }
-
-
 
         private void ModifySelectedChapter()
         {
@@ -354,7 +352,6 @@ namespace NovelReader
 
             }
         }
-
 
         private void WritePrevChap()
         {
