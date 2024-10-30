@@ -386,7 +386,7 @@ namespace GetTruyen
                 await tab.CloseAsync();
 
 
-                chap.ChapterDetailContents = await AppDbContext.GenerateChapterContent(content, chap.BookId, chap.ChapterId);
+                chap.ChapterDetailContents = AppDbContext.GenerateChapterContent(content, chap.BookId, chap.ChapterId);
 
                 await _log.WriteLog($"[{reTitle}][{bookSlug}][Trial {trial}] Completed chapter {chap.IndexChapter}/{maxChap} - {chap.Slug} - ({chap?.ChapterDetailContents?.Count} contents)");
             }
