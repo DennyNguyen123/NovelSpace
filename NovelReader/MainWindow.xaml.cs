@@ -257,9 +257,7 @@ namespace NovelReader
 
                         this.Dispatcher.Invoke(() =>
                         {
-                            txtChapterName.Text = this.SelectedChapter.Title;
-                            lstContent.ItemsSource = this.SelectedChapter.Content;
-                            ModifySelectedChapter();
+                            RenderChapter();
                         });
 
                     }
@@ -304,9 +302,7 @@ namespace NovelReader
 
                     this.Dispatcher.Invoke(() =>
                     {
-                        txtChapterName.Text = this.SelectedChapter.Title;
-                        lstContent.ItemsSource = this.SelectedChapter.Content;
-                        ModifySelectedChapter();
+                        RenderChapter();
                     });
                 }
 
@@ -319,6 +315,13 @@ namespace NovelReader
             )
             ;
 
+        }
+
+        private void RenderChapter()
+        {
+            txtChapterName.Text = this.SelectedChapter.Title;
+            lstContent.ItemsSource = this.SelectedChapter.Content;
+            ModifySelectedChapter();
         }
 
         private void ModifySelectedChapter()
