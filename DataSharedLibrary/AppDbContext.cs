@@ -114,7 +114,7 @@ namespace DataSharedLibrary
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            chapter.Content = cleanedItems;
+            chapter.Content = cleanedItems.Distinct().ToList();
             return chapter;
 
         }

@@ -6,9 +6,9 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<UseWindowsForms>False</UseWindowsForms>
+		<UseWindowsForms>false</UseWindowsForms>
 		<ApplicationIcon>novelreader.ico</ApplicationIcon>
-		<PublishReadyToRun>true</PublishReadyToRun>
+		<PublishReadyToRun>false</PublishReadyToRun>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
