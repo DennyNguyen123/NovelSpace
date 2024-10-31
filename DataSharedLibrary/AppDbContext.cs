@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using QuickEPUB;
 using System;
+using System.Collections.Immutable;
 using System.Data;
 using System.Security.Policy;
 using System.Text.Json;
@@ -405,31 +406,68 @@ namespace DataSharedLibrary
                     return (false, "Internal error.");
                 }
 
-                var lstNewChapter = new List<ChapterContent>();
-
+                newNovel.BookId = Guid.NewGuid().ToString();
                 newNovel.Chapters = new List<ChapterContent>();
 
                 foreach (var chapter in novelStock?.Chapters!)
                 {
-                    await this.GetContentChapter(chapter, novelStock.BookName, cancellationToken, false);
+                    await this.GetContentChapter(chapter, novelStock?.BookName, cancellationToken, false);
 
-                    var lstIndexHeader = chapter.Content?.Where(x => x?.StartsWith("<h")??false).Select(x=>chapter.Content.IndexOf(x));
+                    var lstIndexHeader = chapter.Content?.Where(x => x?.StartsWith("<h2") ?? false)
+                        .Select(x => chapter.Content.IndexOf(x)).ToList();
 
-                    if (lstIndexHeader?.Count() > 0)
+                    if (lstIndexHeader?.Count() == 0)
                     {
+                        chapter.BookId = newNovel?.BookId;
+                        newNovel?.Chapters.Add(chapter);
                         continue;
                     }
 
                     foreach (var indexHeader in lstIndexHeader!)
                     {
+                        var index = lstIndexHeader.IndexOf(indexHeader);
                         var newChapter = new ChapterContent();
-                        newChapter.Title = chapter?.Content?[indexHeader];
+                        newChapter.Title = Utils.GetHtmlInnerText(chapter?.Content?[indexHeader]);
+                        newChapter.BookId = newNovel?.BookId;
+                        newChapter.ChapterId = Guid.NewGuid().ToString();
+                        newChapter.IndexChapter = index;
+                        newChapter.ChapterDetailContents = new List<ChapterDetailContent>();
+                        var isLastChap = index == lstIndexHeader.Count() - 1;
+
+                        var lastChapterIndex = (isLastChap ? chapter?.Content?.Count() - 1 : lstIndexHeader[index + 1] - 1)??0;
+
+                        var lstNewContent = chapter?.Content?.GetRange(indexHeader + 1, lastChapterIndex);
+
+                        lstNewContent?.ForEach(content =>
+                        {
+                            var newContent = new ChapterDetailContent();
+                            newContent.Id = Guid.NewGuid().ToString();
+                            newContent.BookId = newChapter.BookId;
+                            newContent.ChapterId = newChapter.ChapterId;
+                            newContent.Content = content;
+
+                            newChapter.ChapterDetailContents.Add(newContent);
+                        });
+
+                        newNovel?.Chapters.Add(newChapter);
                     }
+
+                    var curIndex = (double)(novelStock?.Chapters?.IndexOf(chapter!) ?? 0);
+                    var maxCount = (double)(novelStock?.Chapters.Count ?? 1);
+
+                    var state = curIndex / maxCount;
+
+                    updateProgress?.Invoke(state);
 
 
                 }
 
+                if (newNovel == null)
+                {
+                    return (false, "");
+                }
 
+                await this.NovelContents.AddAsync(newNovel);
 
 
                 return (true, null);

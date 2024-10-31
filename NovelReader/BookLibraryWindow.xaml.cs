@@ -303,7 +303,7 @@ namespace NovelReader
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
                     , isHideMainWindows: true
-                    , IsIndeterminate: true
+                    , IsIndeterminate: false
                 );
             }
 
