@@ -4,7 +4,7 @@
   "CurrentPosition": 0,
   "FolderTemp": "D:\\Truyen\\SQLite",
   "CurrentBookId": "",
-  "FontSize": 20,
+  "FontSize": 25,
   "VoiceName": "Microsoft An",
   "VoiceRate": 2,
   "VoiceVolumn": 100,
@@ -17,5 +17,5 @@
   "LastHeigh": 624,
   "LastTop": 0,
   "LastLeft": 0,
-  "LineHeight" :  30
+  "LineHeight" :  35
 }

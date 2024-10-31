@@ -46,6 +46,7 @@
                                     <MenuItem Header="Open Book" Click="OpenItem_Click"/>
                                     <MenuItem Header="Delete Book" Click="DeleteItem_Click"/>
                                     <MenuItem Header="Export Book" Click="ExportItem_Click"/>
+                                    <MenuItem Header="Split Chapter Book" Click="SplitItem_Click"/>
                                 </ContextMenu>
                             </Border.ContextMenu>
                             

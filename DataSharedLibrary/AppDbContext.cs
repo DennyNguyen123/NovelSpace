@@ -84,7 +84,7 @@ namespace DataSharedLibrary
             return novel;
         }
 
-        public async Task<ChapterContent?> GetContentChapter(ChapterContent chapter, string? bookName, CancellationToken cancellationToken = default)
+        public async Task<ChapterContent?> GetContentChapter(ChapterContent chapter, string? bookName, CancellationToken cancellationToken = default, bool isParseHtml = true)
         {
             //using var db = new AppDbContext(_dbPath, new DbContextOptions<AppDbContext>());
 
@@ -104,17 +104,30 @@ namespace DataSharedLibrary
             cancellationToken.ThrowIfCancellationRequested();
 
             var cleanedItems = content
-            .Select(item => Utils.GetHtmlInnerText(item?.Replace("&nbsp;", "").Trim()?
-            //Remove ()
-            .Replace(bookName?.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "")
-            .Replace(chapter.Title ?? "", ""))) // Remove &nbsp and trim spaces/tabs
-            .Where(item => !string.IsNullOrWhiteSpace(item)) // Optional: remove empty or whitespace items
+            .Select(item =>
+                //Utils.GetHtmlInnerText(
+                item?.Replace("&nbsp;", "")
+                .Trim()?
+                .Replace(bookName?.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "")
+                .Replace(chapter.Title ?? "", "")
+                //)
+                ) // Remove &nbsp and trim spaces/tabs
+                .Where(item => !string.IsNullOrWhiteSpace(item)
+
+            ) // Optional: remove empty or whitespace items
+            .Distinct()
             .ToList();
 
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            chapter.Content = cleanedItems.Distinct().ToList();
+            if (isParseHtml)
+            {
+                cleanedItems = cleanedItems.Select(x => Utils.GetHtmlInnerText(x)).ToList();
+            }
+
+
+            chapter.Content = cleanedItems;
             return chapter;
 
         }
@@ -378,5 +391,54 @@ namespace DataSharedLibrary
             }
         }
 
+
+
+        public async Task<(bool isSuccess, string? msg)> SplitNovel(string bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var novelStock = await this.GetNovel(bookId);
+
+                var newNovel = novelStock.Clone();
+                if (newNovel == null)
+                {
+                    return (false, "Internal error.");
+                }
+
+                var lstNewChapter = new List<ChapterContent>();
+
+                newNovel.Chapters = new List<ChapterContent>();
+
+                foreach (var chapter in novelStock?.Chapters!)
+                {
+                    await this.GetContentChapter(chapter, novelStock.BookName, cancellationToken, false);
+
+                    var lstIndexHeader = chapter.Content?.Where(x => x?.StartsWith("<h")??false).Select(x=>chapter.Content.IndexOf(x));
+
+                    if (lstIndexHeader?.Count() > 0)
+                    {
+                        continue;
+                    }
+
+                    foreach (var indexHeader in lstIndexHeader!)
+                    {
+                        var newChapter = new ChapterContent();
+                        newChapter.Title = chapter?.Content?[indexHeader];
+                    }
+
+
+                }
+
+
+
+
+                return (true, null);
+
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message);
+            }
+        }
     }
 }

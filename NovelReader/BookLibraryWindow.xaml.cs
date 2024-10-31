@@ -225,7 +225,7 @@ namespace NovelReader
                     }
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isHideMainWindows: false
+                    , isHideMainWindows: true
                     , IsIndeterminate: true
                 );
 
@@ -270,11 +270,48 @@ namespace NovelReader
 
 
         }
+        private void SplitItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+            {
+                bool isSuccess = false;
+                string? msg = "";
+
+                this.RunTaskWithSplash(
+                    action: async (splash, cancel) =>
+                    {
+                        splash.UpdateStatus((processbar, txtStatus) =>
+                        {
+                            txtStatus.Text = "Split novel...";
+                        });
+
+                        (isSuccess, msg) = await _dbContext.SplitNovel(novel.BookId);
+
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            if (!isSuccess)
+                            {
+                                this.ShowError(msg);
+                            }
+                            else
+                            {
+                                LoadNovels();
+                            }
+                        });
+
+                    }
+                    , textColor: MainWindow.AppConfig.TextColor
+                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                    , isHideMainWindows: true
+                    , IsIndeterminate: true
+                );
+            }
+
+
+
+        }
 
 
 
     }
-
-
-
 }
