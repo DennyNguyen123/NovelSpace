@@ -37,7 +37,6 @@ namespace WpfLibrary
             splash.Topmost = isTopMost;
             splash.progressBar.IsIndeterminate = IsIndeterminate;
             splash.WindowStyle = IsIndeterminate ? WindowStyle.None : WindowStyle.ToolWindow;
-
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
             splash.Background = ConvertHtmlColorToBrush(backgroudColor);
             if (windows.IsLoaded)
@@ -101,13 +100,14 @@ namespace WpfLibrary
             for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
             {
                 DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+
                 if (child != null && child is T tChild)
                 {
                     return tChild;
                 }
                 else
                 {
-                    T? childOfChild = FindVisualChild<T>(child);
+                    T? childOfChild = FindVisualChild<T>(child!);
                     if (childOfChild != null)
                     {
                         return childOfChild;
@@ -118,7 +118,7 @@ namespace WpfLibrary
         }
 
 
-        public static void HighlightWord(TextBlock textBlock,string colorHighlight, string? text, int startIndex, int length)
+        public static void HighlightWord(TextBlock textBlock, string colorHighlight, string? text, int startIndex, int length)
         {
             if (!string.IsNullOrEmpty(text) & startIndex < text?.Length)
             {
@@ -131,7 +131,7 @@ namespace WpfLibrary
                 }
                 else
                 {
-                    string beforeKeyword = text?.Substring(0, startIndex)??"";
+                    string beforeKeyword = text?.Substring(0, startIndex) ?? "";
                     string highlightedKeyword = text?.Substring(startIndex, length) ?? "";
                     string afterKeyword = text?.Substring(startIndex + length) ?? "";
 

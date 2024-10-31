@@ -61,8 +61,14 @@ namespace NovelReader
 
             if (novelContents != null)
             {
+                novelContents.ForEach(novel =>
+                {
+                    novel.Title = $"{novel.MaxChapterCount} Chapter";
+                });
+
                 CardItemsControl.ItemsSource = novelContents;
             }
+
 
         }
 
@@ -255,7 +261,7 @@ namespace NovelReader
                     , isHideMainWindows: true
                     , textColor: MainWindow.AppConfig.TextColor
                     , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , IsIndeterminate : false
+                    , IsIndeterminate: false
                     );
 
                 }
