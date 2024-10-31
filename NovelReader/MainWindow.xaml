@@ -153,6 +153,7 @@
                                 <TextBlock Text="{Binding}" 
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,20"
+                                   LineStackingStrategy="BlockLineHeight"
                             />
                             </DataTemplate>
                         </ListBox.ItemTemplate>

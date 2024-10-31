@@ -22,12 +22,16 @@ namespace NovelReader
     public partial class AppConfigWindows : Window, INotifyPropertyChanged
     {
         public List<string> ListVoiceAvaible { get; set; }
+        public List<string> ListFontFamily { get; set; }
         public MainWindow MainWindow { get; set; }
 
         public AppConfigWindows()
         {
             var speech = new SpeechSynthesizer();
             ListVoiceAvaible = speech.GetInstalledVoices().Select(x => x.VoiceInfo.Name).ToList();
+            ListFontFamily = WpfUtils.GetAvailableFonts();
+            ListFontFamily.Sort();
+
             InitializeComponent();
 
             DataContext = this;

@@ -26,6 +26,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Label Margin="0,5,0,0" Content="Folder Temp:" Grid.Row="0" Grid.Column="0"/>
@@ -84,7 +86,18 @@
         />
         <Rectangle Grid.Row="8" Grid.Column="2" x:Name="cdCurTextColor" Margin="5" MouseLeftButtonDown="cdCurTextColor_MouseLeftButtonDown" Stroke="Black" />
 
-        <Button Grid.Row="9" Grid.Column="0" Grid.ColumnSpan="3" Click="ButtonSave_Click" Margin="0,5,0,0">Save</Button>
+        <Label Content="Line Height:" Grid.Row="9" Grid.Column="0"/>
+        <TextBox Margin="0,5,0,0" Text="{Binding Owner.AppConfig.LineHeight,Mode=TwoWay}" 
+            Grid.Row="9" Grid.Column="1"  Grid.ColumnSpan="2"
+        />
+
+
+        <Label Content="Font Family:" Grid.Row="10" Grid.Column="0"/>
+        <ComboBox Margin="0,5,0,0" ItemsSource="{Binding ListFontFamily}" SelectedItem="{Binding Owner.AppConfig.FontFamily,Mode=TwoWay}"
+            Grid.Row="10" Grid.Column="1"  Grid.ColumnSpan="2"
+        />
+
+        <Button Grid.Row="9999" Grid.Column="0" Grid.ColumnSpan="3" Click="ButtonSave_Click" Margin="0,5,0,0">Save</Button>
     </Grid>
 
 

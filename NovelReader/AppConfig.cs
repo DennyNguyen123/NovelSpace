@@ -31,6 +31,8 @@ namespace NovelReader
         public double? LastTop { get; set; } = 300;
         public double? LastLeft { get; set; } = 300;
         public double TextMargin { get; set; } = 30;
+        public double LineHeight { get; set; } = 100;
+        public string FontFamily { get; set; } = "Arial";
         public string _sqlitepath { get => $"{this.FolderTemp}//data.db"; }
 
         private string _savepath = "appconfig.json";
@@ -46,8 +48,6 @@ namespace NovelReader
         {
             try
             {
-
-
                 var json = JsonSerializer.Serialize(this);
                 WpfUtils.ClearAndWriteToFile(_savepath, json);
             }

@@ -17,6 +17,7 @@ using System.IO;
 using System.Text.Json;
 using MessageBox = System.Windows.MessageBox; // Thêm thư viện Drawing để dùng Icon
 using WpfLibrary;
+using System.Windows.Controls.Primitives;
 
 namespace NovelReader
 {
@@ -217,6 +218,7 @@ namespace NovelReader
             InitTriggerChangeColor();
 
             OnPropertyChanged("");
+            ModifySelectedChapter();
         }
 
         private void LoadChapterContent(bool selectedLastItem = false, bool isFirstLoad = false)
@@ -266,7 +268,7 @@ namespace NovelReader
             , isHideMainWindows: false
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
-            , IsIndeterminate : true
+            , IsIndeterminate: true
             );
 
         }
@@ -305,13 +307,10 @@ namespace NovelReader
                         RenderChapter();
                     });
                 }
-
-
-
             }
             , textColor: AppConfig.TextColor
             , backgroudColor: AppConfig.BackgroundColor
-            , IsIndeterminate : true
+            , IsIndeterminate: true
             )
             ;
 
@@ -321,7 +320,37 @@ namespace NovelReader
         {
             txtChapterName.Text = this.SelectedChapter.Title;
             lstContent.ItemsSource = this.SelectedChapter.Content;
+            // Đăng ký sự kiện StatusChanged để chờ sinh xong các item container
+            lstContent.ItemContainerGenerator.StatusChanged += ItemContainerGenerator_StatusChanged;
+
             ModifySelectedChapter();
+        }
+
+
+        private void ItemContainerGenerator_StatusChanged(object? sender, EventArgs e)
+        {
+            // Kiểm tra xem tất cả các container đã được sinh ra hay chưa
+            if (lstContent.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
+            {
+                ChangeLineVisual(); // Gọi hàm để thay đổi LineHeight
+            }
+        }
+
+        private void ChangeLineVisual()
+        {
+            foreach (var item in lstContent.Items)
+            {
+                ListBoxItem listBoxItem = (ListBoxItem)lstContent.ItemContainerGenerator.ContainerFromItem(item);
+                if (listBoxItem != null)
+                {
+                    TextBlock textBlock = WpfUtils.FindVisualChild<TextBlock>(listBoxItem);
+                    if (textBlock != null)
+                    {
+                        textBlock.LineHeight = AppConfig.LineHeight; // Chỉnh LineHeight ở đây
+                        textBlock.FontFamily = new System.Windows.Media.FontFamily(AppConfig.FontFamily); // Chỉnh LineHeight ở đây
+                    }
+                }
+            }
         }
 
         private void ModifySelectedChapter()
@@ -517,68 +546,6 @@ namespace NovelReader
             HighlightSpeechingSelected(curPos, selectedText);
         }
 
-
-        // Hàm tìm và highlight từ trong TextBlock
-        private void HighlightWord(TextBlock textBlock, string? text, int startIndex, int length)
-        {
-            if (!string.IsNullOrEmpty(text) & startIndex < text?.Length)
-            {
-                textBlock.Inlines.Clear();
-                var isExist = text.Substring(startIndex, length)?.Count() > 0;
-
-                if (!isExist)
-                {
-                    textBlock.Inlines.Add(new Run(text));
-                }
-                else
-                {
-                    string beforeKeyword = text.Substring(0, startIndex);
-                    string highlightedKeyword = text.Substring(startIndex, length);
-                    string afterKeyword = text.Substring(startIndex + length);
-
-                    if (!string.IsNullOrEmpty(beforeKeyword))
-                    {
-                        textBlock.Inlines.Add(new Run(beforeKeyword));
-                    }
-
-                    var highlightedRun = new Run(highlightedKeyword)
-                    {
-                        Background = WpfUtils.ConvertHtmlColorToBrush(AppConfig.CurrentTextColor),
-                        FontWeight = FontWeights.Bold
-                    };
-                    textBlock.Inlines.Add(highlightedRun);
-
-                    if (!string.IsNullOrEmpty(afterKeyword))
-                    {
-                        textBlock.Inlines.Add(new Run(afterKeyword));
-                    }
-                }
-            }
-        }
-
-        // Hàm tìm TextBlock bên trong ListBoxItem
-        private T FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
-        {
-            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
-            {
-                DependencyObject child = VisualTreeHelper.GetChild(obj, i);
-                if (child != null && child is T tChild)
-                {
-                    return tChild;
-                }
-                else
-                {
-                    T childOfChild = FindVisualChild<T>(child);
-                    if (childOfChild != null)
-                    {
-                        return childOfChild;
-                    }
-                }
-            }
-            return null;
-        }
-
-
         private void HighlightSpeechingSelected(int startPosition, string? highlightText)
         {
             foreach (var item in lstContent.Items)
@@ -586,7 +553,7 @@ namespace NovelReader
                 var container = (ListBoxItem)lstContent.ItemContainerGenerator.ContainerFromItem(item);
                 if (container != null)
                 {
-                    var textBlock = FindVisualChild<TextBlock>(container);
+                    var textBlock = WpfUtils.FindVisualChild<TextBlock>(container);
                     if (textBlock != null)
                     {
                         textBlock.Inlines.Clear();
@@ -601,10 +568,10 @@ namespace NovelReader
                 var container = (ListBoxItem)lstContent.ItemContainerGenerator.ContainerFromItem(selectedText);
                 if (container != null)
                 {
-                    var textBlock = FindVisualChild<TextBlock>(container);
+                    var textBlock = WpfUtils.FindVisualChild<TextBlock>(container);
                     if (textBlock != null)
                     {
-                        HighlightWord(textBlock, selectedText, startPosition, (highlightText ?? "").Length);
+                        WpfUtils.HighlightWord(textBlock, AppConfig.CurrentTextColor, selectedText, startPosition, (highlightText ?? "").Length);
                     }
                 }
             }
@@ -673,6 +640,10 @@ namespace NovelReader
 
         }
 
+        private void lstContent_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
 
         private void LstContent_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -917,6 +888,7 @@ namespace NovelReader
         }
 
         #endregion Menu Region
+
 
     }
 }

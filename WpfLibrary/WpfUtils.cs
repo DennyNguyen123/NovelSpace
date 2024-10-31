@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -25,19 +26,6 @@ namespace WpfLibrary
 
     public static class WpfUtils
     {
-
-        /// <summary>
-        /// Splash can cancel
-        /// </summary>
-        /// <param name="windows"></param>
-        /// <param name="action"></param>
-        /// <param name="doneAction"></param>
-        /// <param name="isHideMainWindows"></param>
-        /// <param name="isRunAsync"></param>
-        /// <param name="isTopMost"></param>
-        /// <param name="textColor"></param>
-        /// <param name="backgroudColor"></param>
-        /// <param name="isDeactiveMainWindow"></param>
         public static void RunTaskWithSplash(this Window windows, Action<SplashScreenWindow, CancellationToken> action
         , bool isHideMainWindows = true
         , bool isTopMost = false
@@ -107,6 +95,94 @@ namespace WpfLibrary
         }
 
 
+
+        public static T? FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(obj); i++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(obj, i);
+                if (child != null && child is T tChild)
+                {
+                    return tChild;
+                }
+                else
+                {
+                    T? childOfChild = FindVisualChild<T>(child);
+                    if (childOfChild != null)
+                    {
+                        return childOfChild;
+                    }
+                }
+            }
+            return null;
+        }
+
+
+        public static void HighlightWord(TextBlock textBlock,string colorHighlight, string? text, int startIndex, int length)
+        {
+            if (!string.IsNullOrEmpty(text) & startIndex < text?.Length)
+            {
+                textBlock.Inlines.Clear();
+                var isExist = text?.Substring(startIndex, length)?.Count() > 0;
+
+                if (!isExist)
+                {
+                    textBlock.Inlines.Add(new Run(text));
+                }
+                else
+                {
+                    string beforeKeyword = text?.Substring(0, startIndex)??"";
+                    string highlightedKeyword = text?.Substring(startIndex, length) ?? "";
+                    string afterKeyword = text?.Substring(startIndex + length) ?? "";
+
+                    if (!string.IsNullOrEmpty(beforeKeyword))
+                    {
+                        textBlock.Inlines.Add(new Run(beforeKeyword));
+                    }
+
+                    var highlightedRun = new Run(highlightedKeyword)
+                    {
+                        Background = WpfUtils.ConvertHtmlColorToBrush(colorHighlight),
+                        FontWeight = FontWeights.Bold
+                    };
+                    textBlock.Inlines.Add(highlightedRun);
+
+                    if (!string.IsNullOrEmpty(afterKeyword))
+                    {
+                        textBlock.Inlines.Add(new Run(afterKeyword));
+                    }
+                }
+            }
+        }
+
+
+        public static List<string> GetAvailableFonts()
+        {
+            var lstrs = new List<string>();
+            // Lấy danh sách tất cả các font trên hệ thống
+            var fonts = Fonts.SystemFontFamilies;
+
+            // Ký tự tiếng Việt cần kiểm tra (có thể dùng bất kỳ ký tự nào tiếng Việt có dấu)
+            string sampleText = "Ă"; // Ví dụ với ký tự tiếng Việt
+
+            //Console.WriteLine("Danh sách các font hỗ trợ tiếng Việt:");
+
+            foreach (var fontFamily in fonts)
+            {
+                // Kiểm tra xem font có thể hiển thị ký tự tiếng Việt hay không
+                var typeface = new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+                if (typeface.TryGetGlyphTypeface(out var glyphTypeface))
+                {
+                    // Kiểm tra nếu ký tự có glyph tương ứng trong font
+                    if (glyphTypeface.CharacterToGlyphMap.ContainsKey(sampleText[0]))
+                    {
+                        lstrs.Add(fontFamily.Source);
+                    }
+                }
+            }
+
+            return lstrs;
+        }
 
         public static void ShowError(this Window window, string msg)
         {
