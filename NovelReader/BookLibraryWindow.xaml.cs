@@ -31,6 +31,9 @@ namespace NovelReader
 
         public AppDbContext? _dbContext { get; set; }
 
+        public bool isHandling = false;
+
+
         public BookLibraryWindow()
         {
             InitializeComponent();
@@ -98,22 +101,30 @@ namespace NovelReader
 
         private void Border_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            // Lấy item tương ứng từ Border
-            var border = sender as Border;
-            if (border != null)
+            if (!isHandling)
             {
-                var dataContext = border.DataContext as NovelContent;
-                OpenBook(dataContext);
+                // Lấy item tương ứng từ Border
+                var border = sender as Border;
+                if (border != null)
+                {
+                    var dataContext = border.DataContext as NovelContent;
+                    OpenBook(dataContext);
+                }
+                isHandling = false;
             }
         }
 
         private void OpenItem_Click(object sender, RoutedEventArgs e)
         {
-            var itemControl = sender as ItemsControl;
-            if (itemControl != null)
+            if (!isHandling)
             {
-                var dataContext = itemControl.DataContext as NovelContent;
-                OpenBook(dataContext);
+                var itemControl = sender as ItemsControl;
+                if (itemControl != null)
+                {
+                    var dataContext = itemControl.DataContext as NovelContent;
+                    OpenBook(dataContext);
+                }
+                isHandling = false;
             }
         }
 
@@ -135,65 +146,12 @@ namespace NovelReader
 
         private void ImportBook_Click(object sender, RoutedEventArgs e)
         {
-            var filename = WpfUtils.GetFilePath(null, "Novel files (*.novel)|*.novel|EPUB files (*.epub)|*.epub|All Files|*.*");
-            string? bookId = null;
-            string? msg = null;
-            DateTime startDate = DateTime.Now;
-
-            if (!string.IsNullOrEmpty(filename))
+            if (!isHandling)
             {
-                var check = CheckValidFileExtension(filename);
-
-                if (!check.isValid)
-                {
-                    return;
-                }
-
-                this.RunTaskWithSplash(
-                    (splash, cancel) =>
-                    {
-                        splash.UpdateStatus((processbar, txtStatus) =>
-                        {
-                            txtStatus.Text = "Importing novel...";
-                        });
-
-                        if (check.ext == ".epub")
-                        {
-                            (bookId, msg) = _dbContext.ImportEpub(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
-                        }
-                        else if (check.ext == ".novel")
-                        {
-                            (bookId, msg) = _dbContext.ImportBookByJsonModel(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
-                        }
-
-
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            if (!string.IsNullOrWhiteSpace(msg) || string.IsNullOrWhiteSpace(bookId))
-                            {
-                                this.ShowError(msg);
-                            }
-                            else
-                            {
-                                LoadNovels();
-                            }
-                        });
-
-                    }
-                    , textColor: MainWindow.AppConfig.TextColor
-                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isHideMainWindows: false
-                    , IsIndeterminate: false
-                    );
-
-            }
-        }
-
-        private void ExportItem_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
-            {
-                var filename = WpfUtils.SaveFileFirst($"{novel?.BookName} - {novel?.Author}", "EPUB files (*.epub)|*.epub|NOVEL Files (*.novel)|novel");
+                var filename = WpfUtils.GetFilePath(null, "Novel files (*.novel)|*.novel|EPUB files (*.epub)|*.epub|All Files|*.*");
+                string? bookId = null;
+                string? msg = null;
+                DateTime startDate = DateTime.Now;
 
                 if (!string.IsNullOrEmpty(filename))
                 {
@@ -205,37 +163,99 @@ namespace NovelReader
                     }
 
                     this.RunTaskWithSplash(
-                    action: (splash, cancel) =>
-                    {
-                        splash.UpdateStatus((processbar, txtStatus) =>
+                        (splash, cancel) =>
                         {
-                            txtStatus.Text = $"Exporting novel {novel?.BookName}...";
-                            splash.SizeToContent = SizeToContent.WidthAndHeight;
-                        });
+                            splash.UpdateStatus((processbar, txtStatus) =>
+                            {
+                                txtStatus.Text = "Importing novel...";
+                            });
 
-                        if (check.ext == ".epub")
-                        {
-                            _dbContext.ExportToEpub(filename, novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
+                            if (check.ext == ".epub")
+                            {
+                                (bookId, msg) = _dbContext.ImportEpub(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
+                            }
+                            else if (check.ext == ".novel")
+                            {
+                                (bookId, msg) = _dbContext.ImportBookByJsonModel(filename, splash.UpdateProgressBar).GetAwaiter().GetResult();
+                            }
+
+
+                            this.Dispatcher.Invoke(() =>
+                            {
+                                if (!string.IsNullOrWhiteSpace(msg) || string.IsNullOrWhiteSpace(bookId))
+                                {
+                                    this.ShowError(msg);
+                                }
+                                else
+                                {
+                                    LoadNovels();
+                                }
+                            });
+
                         }
-                        else if (check.ext == ".novel")
-                        {
-                            _dbContext.ExportToModel(filename, novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
-                        }
-
-
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            WpfUtils.OpenFolderAndSelectFile(filename);
-                        });
-                    }
-                    , isHideMainWindows: true
-                    , textColor: MainWindow.AppConfig.TextColor
-                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , IsIndeterminate: false
-                    );
+                        , textColor: MainWindow.AppConfig.TextColor
+                        , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                        , isHideMainWindows: false
+                        , IsIndeterminate: false
+                        );
 
                 }
 
+                isHandling = false;
+            }
+        }
+
+        private void ExportItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isHandling)
+            {
+                if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+                {
+                    var filename = WpfUtils.SaveFileFirst($"{novel?.BookName} - {novel?.Author}", "EPUB files (*.epub)|*.epub|NOVEL Files (*.novel)|novel");
+
+                    if (!string.IsNullOrEmpty(filename))
+                    {
+                        var check = CheckValidFileExtension(filename);
+
+                        if (!check.isValid)
+                        {
+                            return;
+                        }
+
+                        this.RunTaskWithSplash(
+                        action: (splash, cancel) =>
+                        {
+                            splash.UpdateStatus((processbar, txtStatus) =>
+                            {
+                                txtStatus.Text = $"Exporting novel {novel?.BookName}...";
+                                splash.SizeToContent = SizeToContent.WidthAndHeight;
+                            });
+
+                            if (check.ext == ".epub")
+                            {
+                                _dbContext.ExportToEpub(filename, novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
+                            }
+                            else if (check.ext == ".novel")
+                            {
+                                _dbContext.ExportToModel(filename, novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
+                            }
+
+
+                            this.Dispatcher.Invoke(() =>
+                            {
+                                WpfUtils.OpenFolderAndSelectFile(filename);
+                            });
+                        }
+                        , isHideMainWindows: true
+                        , textColor: MainWindow.AppConfig.TextColor
+                        , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                        , IsIndeterminate: false
+                        );
+
+                    }
+
+                }
+                isHandling = false;
             }
 
 
@@ -243,80 +263,88 @@ namespace NovelReader
 
         private void DeleteItem_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+            if (!isHandling)
             {
-                bool isSuccess = false;
-                string? msg = "";
+                if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+                {
+                    bool isSuccess = false;
+                    string? msg = "";
 
-                this.RunTaskWithSplash(
-                    action: (splash, cancel) =>
-                    {
-                        splash.UpdateStatus((processbar, txtStatus) =>
+                    this.RunTaskWithSplash(
+                        action: (splash, cancel) =>
                         {
-                            txtStatus.Text = "Deleting novel...";
-                        });
-
-                        (isSuccess, msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
-
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            if (!isSuccess)
+                            splash.UpdateStatus((processbar, txtStatus) =>
                             {
-                                this.ShowError(msg);
-                            }
-                            else
+                                txtStatus.Text = "Deleting novel...";
+                            });
+
+                            (isSuccess, msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+
+                            this.Dispatcher.Invoke(() =>
                             {
-                                LoadNovels();
-                            }
-                        });
+                                if (!isSuccess)
+                                {
+                                    this.ShowError(msg);
+                                }
+                                else
+                                {
+                                    LoadNovels();
+                                }
+                            });
 
-                    }
-                    , textColor: MainWindow.AppConfig.TextColor
-                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isHideMainWindows: true
-                    , IsIndeterminate: true
-                );
+                        }
+                        , textColor: MainWindow.AppConfig.TextColor
+                        , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                        , isHideMainWindows: true
+                        , IsIndeterminate: true
+                    );
 
 
+                }
+                isHandling = false;
             }
         }
 
 
         private void SplitItem_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+            if (!isHandling)
             {
-                bool isSuccess = false;
-                string? msg = "";
+                if (sender is ItemsControl itemControl && itemControl?.DataContext is NovelContent novel)
+                {
+                    bool isSuccess = false;
+                    string? msg = "";
 
-                this.RunTaskWithSplash(
-                    action: (splash, cancel) =>
-                    {
-                        splash.UpdateStatus((processbar, txtStatus) =>
+                    this.RunTaskWithSplash(
+                        action: (splash, cancel) =>
                         {
-                            txtStatus.Text = "Split novel...";
-                        });
-
-                        (isSuccess, msg) = _dbContext.SplitNovel(novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
-
-                        this.Dispatcher.Invoke(() =>
-                        {
-                            if (!isSuccess)
+                            splash.UpdateStatus((processbar, txtStatus) =>
                             {
-                                this.ShowError(msg);
-                            }
-                            else
-                            {
-                                LoadNovels();
-                            }
-                        });
+                                txtStatus.Text = "Split novel...";
+                            });
 
-                    }
-                    , textColor: MainWindow.AppConfig.TextColor
-                    , backgroudColor: MainWindow.AppConfig.BackgroundColor
-                    , isHideMainWindows: true
-                    , IsIndeterminate: false
-                );
+                            (isSuccess, msg) = _dbContext.SplitNovel(novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
+
+                            this.Dispatcher.Invoke(() =>
+                            {
+                                if (!isSuccess)
+                                {
+                                    this.ShowError(msg);
+                                }
+                                else
+                                {
+                                    LoadNovels();
+                                }
+                            });
+
+                        }
+                        , textColor: MainWindow.AppConfig.TextColor
+                        , backgroudColor: MainWindow.AppConfig.BackgroundColor
+                        , isHideMainWindows: true
+                        , IsIndeterminate: false
+                    );
+                }
+                isHandling = false;
             }
 
 

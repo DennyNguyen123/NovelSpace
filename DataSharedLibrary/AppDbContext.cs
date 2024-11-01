@@ -135,7 +135,7 @@ namespace DataSharedLibrary
                     return;
                 }
 
-                item.Content = item.Content?.Trim()??"";
+                item.Content = item.Content?.Trim() ?? "";
 
                 var valuehtmlparse = GetContentString(item?.Content, isRemoveBookInfo, (bookName, chapter.Title));
                 if (isParseHtml)
@@ -254,21 +254,24 @@ namespace DataSharedLibrary
         {
             try
             {
+                using var db = new AppDbContext(this._dbPath, new DbContextOptions<AppDbContext>());
 
                 var novelContent = await Utils.JsonFromCompress<NovelContent?>(filename, cancellationToken);
+
+                //var novelContent = Utils.JsonFromCompress<NovelContent?>(filename);
 
                 updateProgress?.Invoke(50);
                 if (novelContent != null)
                 {
-                    var checkExist = await CheckExist(novelContent?.BookName);
+                    var checkExist = await db.CheckExist(novelContent?.BookName);
 
                     if (checkExist.isExist)
                     {
                         return (checkExist.bookId, checkExist.msg);
                     }
 
-                    await this.NovelContents.AddAsync(novelContent!, cancellationToken);
-                    await this.SaveChangesAsync(cancellationToken);
+                    await db.NovelContents.AddAsync(novelContent!, cancellationToken);
+                    await db.SaveChangesAsync(cancellationToken);
 
                     updateProgress?.Invoke(99);
                     return (novelContent?.BookId, null);
@@ -443,26 +446,52 @@ namespace DataSharedLibrary
         {
             try
             {
-                await this.ChapterDetailContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
-                updateProgress?.Invoke(20);
-                await this.ChapterContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
-                updateProgress?.Invoke(40);
-                await this.NovelContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync();
+                // Check if the novel exists
+                var novel = await this.NovelContents.FindAsync(bookId);
+                if (novel == null)
+                {
+                    return (false, "Novel with the provided BookId not found.");
+                }
+
+                // Delete ChapterDetailContents
+                var chapterDetails = await this.ChapterDetailContents.Where(x => x.BookId == bookId).ToListAsync();
+                if (chapterDetails.Any())
+                {
+                    this.ChapterDetailContents.RemoveRange(chapterDetails);
+                    updateProgress?.Invoke(20);
+                }
+
+                // Delete ChapterContents
+                var chapters = await this.ChapterContents.Where(x => x.BookId == bookId).ToListAsync();
+                if (chapters.Any())
+                {
+                    this.ChapterContents.RemoveRange(chapters);
+                    updateProgress?.Invoke(40);
+                }
+
+                // Delete the Novel
+                this.NovelContents.Remove(novel);
                 updateProgress?.Invoke(70);
+
+                // Save changes
                 await this.SaveChangesAsync();
                 updateProgress?.Invoke(90);
-                // Run the VACUUM command
+
+                // Run VACUUM command
                 this.Database.ExecuteSqlRaw("VACUUM");
                 updateProgress?.Invoke(99);
-                return (true, null);
 
+                return (true, null);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return (false, "A concurrency error occurred: " + ex.Message);
             }
             catch (Exception ex)
             {
                 return (false, ex.Message);
             }
         }
-
 
 
         public async Task<(bool isSuccess, string? msg)> SplitNovel(string bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)

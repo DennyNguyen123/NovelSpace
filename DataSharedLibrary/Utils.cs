@@ -66,16 +66,26 @@ namespace DataSharedLibrary
 
         public static async Task<T?> JsonFromCompress<T>(string filePath, CancellationToken cancellationToken = default)
         {
-            // Mở FileStream để đọc tệp nén
+            // Mở file và đọc nội dung Base64
             using FileStream fs = File.OpenRead(filePath);
-            using GZipStream gzipStream = new GZipStream(fs, CompressionMode.Decompress);
+            using StreamReader reader = new StreamReader(fs);
+            string base64Data = await reader.ReadToEndAsync();
 
-            // Deserialize dữ liệu từ GZipStream thành đối tượng
+            // Giải mã Base64 trực tiếp vào mảng byte
+            byte[] compressedData = Convert.FromBase64String(base64Data);
+
+            // Dùng MemoryStream để chứa dữ liệu đã giải mã
+            using MemoryStream compressedStream = new MemoryStream(compressedData);
+
+            // Mở GZipStream để giải nén dữ liệu
+            using GZipStream gzipStream = new GZipStream(compressedStream, CompressionMode.Decompress);
+
+            // Deserialize JSON từ stream giải nén
             return await JsonSerializer.DeserializeAsync<T>(gzipStream, cancellationToken: cancellationToken);
         }
 
 
-        public async static Task CompressJsonAndSave(object? data,string filePath, CancellationToken cancellationToken = default)
+        public async static Task CompressJsonAndSave(object? data, string filePath, CancellationToken cancellationToken = default)
         {
             if (data == null)
             {
@@ -85,18 +95,30 @@ namespace DataSharedLibrary
             // Serialize đối tượng thành JSON thành một chuỗi
             var jsonString = JsonSerializer.Serialize(data);
 
-            // Mở FileStream để ghi dữ liệu vào tệp nén
-            using FileStream fs = File.Create(filePath);
-            using GZipStream gzipStream = new GZipStream(fs, CompressionMode.Compress);
-
             // Chuyển đổi chuỗi JSON thành mảng byte
             var jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonString);
 
-            // Ghi mảng byte vào GZipStream
-            await gzipStream.WriteAsync(jsonBytes, 0, jsonBytes.Length, cancellationToken);
+            // Nén và mã hóa Base64 trực tiếp vào file
+            using FileStream fs = File.Create(filePath);
+            using (MemoryStream compressedStream = new MemoryStream())
+            {
+                // Nén dữ liệu vào MemoryStream
+                using (GZipStream gzipStream = new GZipStream(compressedStream, CompressionMode.Compress, true))
+                {
+                    await gzipStream.WriteAsync(jsonBytes, 0, jsonBytes.Length, cancellationToken);
+                }
+
+                // Đặt vị trí của MemoryStream về đầu để đọc lại dữ liệu đã nén
+                compressedStream.Seek(0, SeekOrigin.Begin);
+
+                // Chuyển đổi trực tiếp dữ liệu nén sang Base64 và ghi vào FileStream
+                using StreamWriter writer = new StreamWriter(fs);
+                string base64Data = Convert.ToBase64String(compressedStream.GetBuffer(), 0, (int)compressedStream.Length);
+                await writer.WriteAsync(base64Data.AsMemory(), cancellationToken);
+            }
         }
 
-        
+
 
         //public async Task SaveJsonWithCompress(object? input, string filePath)
         //{
