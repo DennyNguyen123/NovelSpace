@@ -324,8 +324,11 @@ namespace NovelReader
         private void RenderChapter()
         {
 
-            var index = (Novel?.Chapters.IndexOf(this.SelectedChapter) ?? 0) + 1;
+            var index = _current_reader?.CurrentChapter + 1;
             txtChapterName.Text = $"[{index}/{Novel.MaxChapterCount}] {this.SelectedChapter.Title}";
+            NumChapterGoto.Value = index;
+            NumChapterGoto.Maximum = Novel?.MaxChapterCount;
+
             lstContent.ItemsSource = this.SelectedChapter.Content;
             // Đăng ký sự kiện StatusChanged để chờ sinh xong các item container
             lstContent.ItemContainerGenerator.StatusChanged += ItemContainerGenerator_StatusChanged;
@@ -364,9 +367,6 @@ namespace NovelReader
         {
             try
             {
-                NumChapterGoto.Value = _current_reader?.CurrentChapter + 1;
-                NumChapterGoto.Maximum = Novel?.MaxChapterCount;
-
                 lstContent.SelectedIndex = _current_reader?.CurrentLine ?? 0;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
