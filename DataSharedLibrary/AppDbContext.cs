@@ -97,7 +97,7 @@ namespace DataSharedLibrary
 
             if (isReplaceBookInfo)
             {
-                output = output?.Replace(bookInfo.bookName.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "");
+                output = output?.Replace(bookInfo.bookName?.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "");
                 output = output?.Replace(bookInfo.chapterTitle ?? "", "");
             }
 
@@ -126,26 +126,33 @@ namespace DataSharedLibrary
                 & x.ChapterId == chapter.ChapterId).ToListAsync(cancellationToken);
             }
 
-            var lstIndexRemove = new List<ChapterDetailContent>();
+            var lstIndexRemove = new List<ChapterDetailContent?>();
 
-            lstSource?.ForEach(x =>
+            foreach (var item in lstSource)
             {
-                var valuehtmlparse = GetContentString(x.Content, isRemoveBookInfo, (bookName, chapter.Title));
+                if (item == null)
+                {
+                    return;
+                }
+
+                item.Content = item.Content?.Trim()??"";
+
+                var valuehtmlparse = GetContentString(item?.Content, isRemoveBookInfo, (bookName, chapter.Title));
                 if (isParseHtml)
                 {
                     if (string.IsNullOrEmpty(valuehtmlparse))
                     {
-                        lstIndexRemove.Add(x);
+                        lstIndexRemove.Add(item);
                     }
                     else
                     {
-                        x.Content = valuehtmlparse;
+                        item!.Content = valuehtmlparse;
                     }
                 }
 
-            });
+            }
 
-            lstIndexRemove.ForEach(x => lstSource?.Remove(x));
+            lstIndexRemove.ForEach(x => lstSource?.Remove(x!));
 
             lstSource = lstSource?.Where(x => !string.IsNullOrWhiteSpace(x.Content)).ToList();
 
