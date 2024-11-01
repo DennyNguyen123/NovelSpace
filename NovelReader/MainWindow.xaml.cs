@@ -214,11 +214,12 @@ namespace NovelReader
         {
             NumChapterGoto.Maximum = Novel?.Chapters?.Count;
             NumChapterGoto.Value = _current_reader?.CurrentChapter;
+            this.Title = $"{Novel?.BookName} - {Novel?.Author}";
 
             InitTriggerChangeColor();
 
             OnPropertyChanged("");
-            ModifySelectedChapter();
+            //ModifySelectedChapter();
         }
 
         private void LoadChapterContent(bool selectedLastItem = false, bool isFirstLoad = false)
@@ -322,7 +323,9 @@ namespace NovelReader
 
         private void RenderChapter()
         {
-            txtChapterName.Text = this.SelectedChapter.Title;
+
+            var index = (Novel?.Chapters.IndexOf(this.SelectedChapter) ?? 0) + 1;
+            txtChapterName.Text = $"[{index}/{Novel.MaxChapterCount}] {this.SelectedChapter.Title}";
             lstContent.ItemsSource = this.SelectedChapter.Content;
             // Đăng ký sự kiện StatusChanged để chờ sinh xong các item container
             lstContent.ItemContainerGenerator.StatusChanged += ItemContainerGenerator_StatusChanged;
@@ -376,14 +379,7 @@ namespace NovelReader
                     _AppDbContext.SaveChanges();
                 }
 
-                var index = Novel?.Chapters.IndexOf(this.SelectedChapter) ?? 0 + 1;
-
-
-                //Update Title App
-                this.Title = $"[{index}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
-
-
-                //Utils.ClearRAM(false);
+                Utils.ClearRAM(false);
             }
             catch (Exception)
             {

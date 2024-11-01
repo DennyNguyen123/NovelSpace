@@ -131,7 +131,7 @@
                         <RowDefinition Height="*"></RowDefinition>
                     </Grid.RowDefinitions>
 
-                    <TextBlock x:Name="txtChapterName" Grid.Row="0" TextWrapping="Wrap" Text="{Binding SelectedChapter.Title}" FontSize="20" FontWeight="Bold" Foreground="Red" Grid.ColumnSpan="2"/>
+                    <TextBlock x:Name="txtChapterName" FontFamily="{Binding AppConfig.FontFamily}" Grid.Row="0" TextWrapping="Wrap" Text="{Binding SelectedChapter.Title}" FontSize="20" FontWeight="Bold" Foreground="Red" Grid.ColumnSpan="2"/>
 
                     <ListBox ItemsSource="{Binding SelectedChapter.Content}" 
                         Grid.Row="1" Background="Transparent"
