@@ -7,115 +7,18 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using ZstdNet;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DataSharedLibrary
 {
-    public enum CompressType
-    {
-        Zstd,
-        GZip,
-    }
 
     public static class Utils
     {
-        public static string DecryptAes(string encryptedData, string password)
-        {
-            // Chuyển đổi chuỗi Base64 thành mảng byte
-            byte[] cipherBytes = Convert.FromBase64String(encryptedData);
-
-            // Tạo một đối tượng AES
-            using (Aes aes = Aes.Create())
-            {
-                // Tạo khóa từ mật khẩu
-                using (var key = new Rfc2898DeriveBytes(password, new byte[16], 1000))
-                {
-                    aes.Key = key.GetBytes(aes.KeySize / 8);
-                }
-
-                // Đặt thông tin cho đối tượng AES
-                aes.Mode = CipherMode.CBC;
-                aes.Padding = PaddingMode.PKCS7;
-
-                // Lấy IV từ dữ liệu đã mã hóa (nếu cần)
-                byte[] iv = new byte[aes.BlockSize / 8];
-                Array.Copy(cipherBytes, iv, iv.Length);
-                aes.IV = iv;
-
-                // Lấy dữ liệu đã mã hóa (cắt bỏ IV)
-                byte[] cipherText = new byte[cipherBytes.Length - iv.Length];
-                Array.Copy(cipherBytes, iv.Length, cipherText, 0, cipherText.Length);
-
-                // Giải mã dữ liệu
-                using (var decryptor = aes.CreateDecryptor())
-                {
-                    using (var msDecrypt = new MemoryStream(cipherText))
-                    {
-                        using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-                        {
-                            using (var srDecrypt = new StreamReader(csDecrypt))
-                            {
-                                return srDecrypt.ReadToEnd();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-
-        // Hàm nén dữ liệu
-        public static string CompressZstd(string text)
-        {
-            byte[] data = Encoding.UTF8.GetBytes(text); // Chuyển đổi chuỗi thành byte array
-            using (var compressor = new Compressor())
-            {
-                byte[] compressedData = compressor.Wrap(data); // Nén dữ liệu
-                return Convert.ToBase64String(compressedData); // Chuyển đổi byte array thành chuỗi Base64
-            }
-        }
-
-        public static string DecompressZstd(string compressedText)
-        {
-            byte[] compressedData = Convert.FromBase64String(compressedText); // Chuyển đổi chuỗi Base64 thành byte array
-            using (var decompressor = new Decompressor())
-            {
-                byte[] decompressedData = decompressor.Unwrap(compressedData); // Giải nén dữ liệu
-                return Encoding.UTF8.GetString(decompressedData); // Chuyển đổi byte array thành chuỗi
-            }
-        }
-
-        public static string DecompressZstd(byte[] compressedData)
-        {
-            // Chuyển đổi chuỗi Base64 thành byte array
-            using (var decompressor = new Decompressor())
-            {
-                byte[] decompressedData = decompressor.Unwrap(compressedData); // Giải nén dữ liệu
-                return Encoding.UTF8.GetString(decompressedData); // Chuyển đổi byte array thành chuỗi
-            }
-        }
-
-
-        public static T? JsonFromCompress<T>(string filePath)
-        {
-            try
-            {
-                var fileByte = File.ReadAllText(filePath);
-
-                var text = GZipDecompressText(fileByte);
-
-                return JsonSerializer.Deserialize<T?>(text);
-            }
-            catch (Exception)
-            {
-            }
-
-            return default(T);
-        }
-
+        #region GZip
 
         public static string GZipCompressText(string text)
         {
@@ -140,6 +43,71 @@ namespace DataSharedLibrary
                 return Encoding.UTF8.GetString(resultStream.ToArray());
             }
         }
+
+        #endregion GZip
+
+        public static T? JsonFromCompress<T>(string filePath)
+        {
+            try
+            {
+                var fileByte = File.ReadAllText(filePath);
+
+                var text = GZipDecompressText(fileByte);
+
+                return JsonSerializer.Deserialize<T?>(text);
+            }
+            catch (Exception)
+            {
+            }
+
+            return default(T);
+        }
+
+
+        public static async Task<T?> JsonFromCompress<T>(string filePath, CancellationToken cancellationToken = default)
+        {
+            // Mở FileStream để đọc tệp nén
+            using FileStream fs = File.OpenRead(filePath);
+            using GZipStream gzipStream = new GZipStream(fs, CompressionMode.Decompress);
+
+            // Deserialize dữ liệu từ GZipStream thành đối tượng
+            return await JsonSerializer.DeserializeAsync<T>(gzipStream, cancellationToken: cancellationToken);
+        }
+
+
+        public async static Task CompressJsonAndSave(object? data,string filePath, CancellationToken cancellationToken = default)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            // Serialize đối tượng thành JSON thành một chuỗi
+            var jsonString = JsonSerializer.Serialize(data);
+
+            // Mở FileStream để ghi dữ liệu vào tệp nén
+            using FileStream fs = File.Create(filePath);
+            using GZipStream gzipStream = new GZipStream(fs, CompressionMode.Compress);
+
+            // Chuyển đổi chuỗi JSON thành mảng byte
+            var jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonString);
+
+            // Ghi mảng byte vào GZipStream
+            await gzipStream.WriteAsync(jsonBytes, 0, jsonBytes.Length, cancellationToken);
+        }
+
+        
+
+        //public async Task SaveJsonWithCompress(object? input, string filePath)
+        //{
+        //    using var fs = File.OpenWrite(filePath);
+        //    // Serialize và ghi dữ liệu vào Stream
+        //    return await JsonSerializer.Serialize(fs, input);
+
+        //}
+
+
+
 
 
         public static void ClearRAM(bool forceFullCollection = false)

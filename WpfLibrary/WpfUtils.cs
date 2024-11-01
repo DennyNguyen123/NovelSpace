@@ -36,6 +36,7 @@ namespace WpfLibrary
             SplashScreenWindow splash = new SplashScreenWindow(isAllowsTransparency: IsIndeterminate);
             splash.Topmost = isTopMost;
             splash.progressBar.IsIndeterminate = IsIndeterminate;
+            splash.txtProgress.Visibility = IsIndeterminate ? Visibility.Hidden : Visibility.Visible;
             splash.WindowStyle = IsIndeterminate ? WindowStyle.None : WindowStyle.ToolWindow;
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
             splash.Background = ConvertHtmlColorToBrush(backgroudColor);
@@ -76,7 +77,10 @@ namespace WpfLibrary
                     // Chuyển về UI thread để hiển thị lại cửa sổ
                     windows.Dispatcher.Invoke(() =>
                     {
-                        windows.Show();  // Thao tác trên UI phải thực hiện trong UI thread
+                        if (isHideMainWindows)
+                        {
+                            windows.Show();  // Thao tác trên UI phải thực hiện trong UI thread
+                        }
                     });
                 }
 

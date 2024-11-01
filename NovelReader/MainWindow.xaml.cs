@@ -225,7 +225,7 @@ namespace NovelReader
         {
 
             this.RunTaskWithSplash(
-            action: async (splash, cancel) =>
+            action: (splash, cancel) =>
             {
                 splash.UpdateStatus((processbar, txtStatus) =>
                 {
@@ -242,7 +242,9 @@ namespace NovelReader
                         this.Novel.Chapters.Where(x => x.Content?.Count > 0).ToList().ForEach(r => { r.Content = null; });
 
                         var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                        this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+                        _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName).GetAwaiter().GetResult();
+
+                        this.SelectedChapter = selectedChapter;
 
                         if (!isFirstLoad)
                         {
@@ -276,7 +278,7 @@ namespace NovelReader
         public void LoadNovelData()
         {
             this.RunTaskWithSplash(
-            action: async (splash, cancel) =>
+            action: (splash, cancel) =>
             {
                 splash.UpdateStatus((processbar, txtStatus) =>
                 {
@@ -292,15 +294,17 @@ namespace NovelReader
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
 
-                this.Novel = await _AppDbContext.GetNovel(bookId, false);
+                this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
-                _current_reader = await _AppDbContext.GetCurrentReader(bookId);
+                _current_reader = _AppDbContext.GetCurrentReader(bookId).GetAwaiter().GetResult();
 
 
                 if (_current_reader != null & this.Novel != null)
                 {
                     var selectedChapter = this.Novel.Chapters[_current_reader.CurrentChapter];
-                    this.SelectedChapter = await _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName);
+                    _AppDbContext.GetContentChapter(selectedChapter, Novel.BookName).GetAwaiter().GetResult();
+
+                    this.SelectedChapter = selectedChapter;
 
                     this.Dispatcher.Invoke(() =>
                     {
@@ -372,9 +376,11 @@ namespace NovelReader
                     _AppDbContext.SaveChanges();
                 }
 
+                var index = Novel?.Chapters.IndexOf(this.SelectedChapter) ?? 0 + 1;
+
 
                 //Update Title App
-                this.Title = $"[{SelectedChapter?.IndexChapter ?? 0 + 1}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
+                this.Title = $"[{index}/{Novel?.MaxChapterCount}] {Novel?.BookName} - {Novel?.Author}";
 
 
                 //Utils.ClearRAM(false);

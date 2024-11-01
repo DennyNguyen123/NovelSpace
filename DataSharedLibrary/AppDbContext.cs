@@ -5,10 +5,12 @@ using QuickEPUB;
 using System;
 using System.Collections.Immutable;
 using System.Data;
+using System.Diagnostics;
 using System.Security.Policy;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Xml.Linq;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -85,52 +87,117 @@ namespace DataSharedLibrary
             return novel;
         }
 
-        public async Task<ChapterContent?> GetContentChapter(ChapterContent chapter, string? bookName, CancellationToken cancellationToken = default, bool isParseHtml = true)
+
+        private string? GetContentString(string? input
+            , bool isReplaceBookInfo
+            , (string? bookName, string? chapterTitle) bookInfo
+            )
+        {
+            var output = Utils.GetHtmlInnerText(input)?.Replace("&nbsp;", "");
+
+            if (isReplaceBookInfo)
+            {
+                output = output?.Replace(bookInfo.bookName.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "");
+                output = output?.Replace(bookInfo.chapterTitle ?? "", "");
+            }
+
+            return output;
+        }
+
+        public async Task GetContentChapter(ChapterContent chapter
+            , string? bookName
+            , List<ChapterDetailContent>? lstSource = null
+            , bool isRemoveBookInfo = true
+            , bool isAddLineToModel = false
+            , bool isParseHtml = true
+            , CancellationToken cancellationToken = default
+        )
         {
             //using var db = new AppDbContext(_dbPath, new DbContextOptions<AppDbContext>());
 
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            var content = await this.ChapterDetailContents.AsNoTracking()
-                .Where(x =>
-                !string.IsNullOrWhiteSpace(x.Content)
-                & x.BookId == chapter.BookId
-                & x.ChapterId == chapter.ChapterId)
-                .OrderBy(x => x.Index)
-                .Select(r => r.Content)
-                .ToListAsync(cancellationToken);
-
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var cleanedItems = content
-            .Select(item =>
-                //Utils.GetHtmlInnerText(
-                item?.Replace("&nbsp;", "")
-                .Trim()?
-                .Replace(bookName?.ReplaceRegex(@"\s*\(.*?\)", "") ?? "", "")
-                .Replace(chapter.Title ?? "", "")
-                //)
-                ) // Remove &nbsp and trim spaces/tabs
-                .Where(item => !string.IsNullOrWhiteSpace(item)
-
-            ) // Optional: remove empty or whitespace items
-            .Distinct()
-            .ToList();
-
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (isParseHtml)
+            if (lstSource == null)
             {
-                cleanedItems = cleanedItems.Select(x => Utils.GetHtmlInnerText(x)).ToList();
+                lstSource = await this.ChapterDetailContents.AsNoTracking()
+                .Where(x =>
+                x.BookId == chapter.BookId
+                & x.ChapterId == chapter.ChapterId).ToListAsync(cancellationToken);
+            }
+
+            var lstIndexRemove = new List<ChapterDetailContent>();
+
+            lstSource?.ForEach(x =>
+            {
+                var valuehtmlparse = GetContentString(x.Content, isRemoveBookInfo, (bookName, chapter.Title));
+                if (isParseHtml)
+                {
+                    if (string.IsNullOrEmpty(valuehtmlparse))
+                    {
+                        lstIndexRemove.Add(x);
+                    }
+                    else
+                    {
+                        x.Content = valuehtmlparse;
+                    }
+                }
+
+            });
+
+            lstIndexRemove.ForEach(x => lstSource?.Remove(x));
+
+            lstSource = lstSource?.Where(x => !string.IsNullOrWhiteSpace(x.Content)).ToList();
+
+            if (isAddLineToModel)
+            {
+                chapter.ChapterDetailContents = lstSource;
+            }
+            else
+            {
+                var content = lstSource?
+                    .Select(x => new { x.Index, x.Content })
+                    .Distinct()
+                    .OrderBy(x => x.Index);
+
+                chapter.Content = content?.Select(x => x.Content).ToList();
             }
 
 
-            chapter.Content = cleanedItems;
-            return chapter;
+            //chapter.Content = content.Distinct().ToList();
 
+        }
+
+
+        public async Task<NovelContent?> GetFullChapterContent(string? bookId, bool isAddLineToModel, Action<double>? updateProgress, CancellationToken cancellationToken = default)
+        {
+            var novel = await this.GetNovel(bookId, false);
+            double chapExecute = 0;
+            double chapterCount = novel?.Chapters?.Count ?? 1;
+
+            var allChapterContent = await this.ChapterDetailContents.AsNoTracking().Where(x => x.BookId == bookId).ToListAsync(cancellationToken);
+
+
+            //// Sử dụng Parallel.ForEachAsync để chạy nhiều luồng
+            await Parallel.ForEachAsync(novel?.Chapters!, cancellationToken, async (chap, token) =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var chapterContent = allChapterContent.Where(x => x.ChapterId == chap.ChapterId).ToList();
+
+                await this.GetContentChapter(
+                    chapter: chap
+                    , novel?.BookName
+                    , lstSource: chapterContent
+                    , isAddLineToModel: isAddLineToModel
+                    , cancellationToken: cancellationToken);
+
+                // Tính toán tiến độ
+                var state = chapExecute++ / chapterCount * 100;
+                updateProgress?.Invoke(state > 100 ? 100 : state);
+            });
+
+            return novel;
         }
 
 
@@ -181,7 +248,7 @@ namespace DataSharedLibrary
             try
             {
 
-                var novelContent = Utils.JsonFromCompress<NovelContent?>(filename);
+                var novelContent = await Utils.JsonFromCompress<NovelContent?>(filename, cancellationToken);
 
                 updateProgress?.Invoke(50);
                 if (novelContent != null)
@@ -313,7 +380,8 @@ namespace DataSharedLibrary
 
         public async Task ExportToEpub(string epubFileName, string? bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
-            var novel = await GetNovel(bookId, isMergeAuthorName: false);
+            //var novel = await GetNovel(bookId, isMergeAuthorName: false);
+            var novel = await GetFullChapterContent(bookId, isAddLineToModel: false, updateProgress, cancellationToken);
 
             var doc = new Epub(novel?.BookName, novel?.Author);
 
@@ -321,24 +389,10 @@ namespace DataSharedLibrary
             var stream = new MemoryStream(Convert.FromBase64String(novel?.ImageBase64 ?? ""));
             doc.AddResource("cover.jpge", EpubResourceType.JPEG, stream, true);
 
-
-            if (novel?.Chapters?.Count == 0)
-            {
-                return;
-            }
             var chapterCount = (double)(novel?.Chapters?.Count() ?? 0);
             double chapExcute = 0;
 
-            await Parallel.ForEachAsync(novel?.Chapters!, cancellationToken, async (chap, token) =>
-            {
-                token.ThrowIfCancellationRequested();
-                using var db = new AppDbContext(_dbPath, new DbContextOptions<AppDbContext>());
-                var updatedChapter = await db.GetContentChapter(chap, novel?.BookName, token);
-                var state = chapExcute += 1 / chapterCount * 100;
-                updateProgress?.Invoke(state > 100 ? 0 : state);
-            });
 
-            chapExcute = 0;
 
 
             // Sử dụng vòng lặp foreach thay vì ForEach để hỗ trợ await
@@ -364,6 +418,16 @@ namespace DataSharedLibrary
             // Xuất file EPUB
             using var fs = new FileStream(epubFileName, FileMode.Create);
             doc.Export(fs);
+        }
+
+
+        public async Task ExportToModel(string savePath, string? bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
+        {
+            //var novel = await GetNovel(bookId, isMergeAuthorName: false);
+
+            var novel = await GetFullChapterContent(bookId, isAddLineToModel: true, updateProgress, cancellationToken);
+
+            await Utils.CompressJsonAndSave(novel, savePath, cancellationToken);
         }
 
 
@@ -398,7 +462,7 @@ namespace DataSharedLibrary
         {
             try
             {
-                var novelStock = await this.GetNovel(bookId);
+                var novelStock = await GetFullChapterContent(bookId, isAddLineToModel: false, updateProgress, cancellationToken);
 
                 var newNovel = novelStock.Clone();
                 if (newNovel == null)
@@ -411,42 +475,79 @@ namespace DataSharedLibrary
 
                 foreach (var chapter in novelStock?.Chapters!)
                 {
-                    await this.GetContentChapter(chapter, novelStock?.BookName, cancellationToken, false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    //await this.GetContentChapter(chapter, novelStock?.BookName, cancellationToken: cancellationToken, isParseHtml: false);
 
-                    var lstIndexHeader = chapter.Content?.Where(x => x?.StartsWith("<h2") ?? false)
+                    var lstIndexHeader = chapter.Content?.Where(x => x?.Trim().StartsWith("<h") ?? false)
                         .Select(x => chapter.Content.IndexOf(x)).ToList();
+
+                    //int lastChapter = newNovel?.Chapters?.Select(x => x.IndexChapter).Max() ?? 0;
+                    var preIndexChapter = Int32.Parse($"{chapter.IndexChapter}000");
 
                     if (lstIndexHeader?.Count() == 0)
                     {
                         chapter.BookId = newNovel?.BookId;
+                        chapter.IndexChapter = preIndexChapter + 1;
                         newNovel?.Chapters.Add(chapter);
                         continue;
                     }
 
                     foreach (var indexHeader in lstIndexHeader!)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         var index = lstIndexHeader.IndexOf(indexHeader);
+
+                        if (index == 0 && indexHeader != 0)
+                        {
+                            var befChap = chapter?.Content?.GetRange(0, indexHeader - 1);
+                            var lastChapBef = newNovel?.Chapters?.LastOrDefault();
+
+                            if (lastChapBef != null)
+                            {
+                                befChap?.ForEach(content =>
+                                {
+                                    var newContent = new ChapterDetailContent();
+                                    newContent.Id = Guid.NewGuid().ToString();
+                                    newContent.BookId = lastChapBef.BookId;
+                                    newContent.ChapterId = lastChapBef.ChapterId;
+                                    newContent.Content = content;
+
+                                    lastChapBef?.ChapterDetailContents?.Add(newContent);
+                                });
+                            }
+
+
+
+                        }
+
                         var newChapter = new ChapterContent();
-                        newChapter.Title = Utils.GetHtmlInnerText(chapter?.Content?[indexHeader]);
+                        newChapter.Title = Utils.GetHtmlInnerText(chapter?.Content?[indexHeader])?.Replace("&nbsp;", "");
                         newChapter.BookId = newNovel?.BookId;
                         newChapter.ChapterId = Guid.NewGuid().ToString();
-                        newChapter.IndexChapter = index;
+                        newChapter.IndexChapter = preIndexChapter + index;
                         newChapter.ChapterDetailContents = new List<ChapterDetailContent>();
                         var isLastChap = index == lstIndexHeader.Count() - 1;
 
-                        var lastChapterIndex = (isLastChap ? chapter?.Content?.Count() - 1 : lstIndexHeader[index + 1] - 1)??0;
+                        var lastChapterIndex = (isLastChap ? chapter?.Content?.Count() - 1 : lstIndexHeader[index + 1] - 1) ?? 0;
 
-                        var lstNewContent = chapter?.Content?.GetRange(indexHeader + 1, lastChapterIndex);
+                        var count = lastChapterIndex - indexHeader;
+
+                        var lstNewContent = chapter?.Content?.GetRange(indexHeader + 1, count);
 
                         lstNewContent?.ForEach(content =>
                         {
-                            var newContent = new ChapterDetailContent();
-                            newContent.Id = Guid.NewGuid().ToString();
-                            newContent.BookId = newChapter.BookId;
-                            newContent.ChapterId = newChapter.ChapterId;
-                            newContent.Content = content;
+                            var contentParse = Utils.GetHtmlInnerText(content)?.Replace("&nbsp;", "");
+                            if (!string.IsNullOrWhiteSpace(contentParse))
+                            {
+                                var newContent = new ChapterDetailContent();
+                                newContent.Id = Guid.NewGuid().ToString();
+                                newContent.BookId = newChapter.BookId;
+                                newContent.ChapterId = newChapter.ChapterId;
+                                newContent.Content = contentParse;
+                                newContent.Index = lstNewContent.IndexOf(content);
 
-                            newChapter.ChapterDetailContents.Add(newContent);
+                                newChapter.ChapterDetailContents.Add(newContent);
+                            }
                         });
 
                         newNovel?.Chapters.Add(newChapter);
@@ -455,7 +556,7 @@ namespace DataSharedLibrary
                     var curIndex = (double)(novelStock?.Chapters?.IndexOf(chapter!) ?? 0);
                     var maxCount = (double)(novelStock?.Chapters.Count ?? 1);
 
-                    var state = curIndex / maxCount;
+                    var state = curIndex / maxCount * 100;
 
                     updateProgress?.Invoke(state);
 
@@ -467,7 +568,12 @@ namespace DataSharedLibrary
                     return (false, "");
                 }
 
-                await this.NovelContents.AddAsync(newNovel);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                newNovel.MaxChapterCount = newNovel?.Chapters.Count;
+
+                await this.NovelContents.AddAsync(newNovel!);
+                await this.SaveChangesAsync();
 
 
                 return (true, null);
