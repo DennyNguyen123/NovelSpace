@@ -104,6 +104,7 @@ namespace NovelReader
 
             //Hide leftsidebar
             ToggleTOC_Click(null, null);
+            ToggleSearch_Click(null, null);
 
             DataContext = this;
         }
@@ -605,8 +606,13 @@ namespace NovelReader
 
         private void lstContent_KeyDown(object sender, KeyEventArgs e)
         {
-            if (!e.Handled & SelectedChapter != null)
+            if (!e.Handled && SelectedChapter != null)
             {
+                if (txtFind.IsFocused)
+                {
+                    return;
+                }
+
                 switch (e.Key)
                 {
                     case Key.Down:
@@ -856,6 +862,21 @@ namespace NovelReader
                 leftColumn.Width = new GridLength(3, GridUnitType.Star); // Show the column by restoring its width to 30%
                 gridSplitter.Width = new GridLength(5);
                 righColumn.Width = new GridLength(7, GridUnitType.Star);
+            }
+        }
+
+
+        private void ToggleSearch_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle visibility of the left column
+            if (rowFind.Height != new GridLength(0))
+            {
+                rowFind.Height = new GridLength(0);
+                lstContent.Focus();
+            }
+            else
+            {
+                rowFind.Height = GridLength.Auto;
             }
         }
 
