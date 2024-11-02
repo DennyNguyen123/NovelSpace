@@ -22,7 +22,7 @@
         <Grid.RowDefinitions>
             <!-- Red: Fixed height -->
             <RowDefinition Height="Auto"/>
-            <!-- Yellow: Take the rest of the space -->
+            <RowDefinition Height="0"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
@@ -79,8 +79,14 @@
             </Menu>
         </StackPanel>
 
+        <StackPanel Orientation="Horizontal"  Grid.Row="1">
+            <TextBox BorderBrush="Black" Width="100" x:Name="txtFind"/>
+            <Button Content="MoveNext" x:Name="btnMoveNext" Margin="10,0,0,0"/>
+            <Button Content="MovePrev" x:Name="btnMovePrev" Margin="10,0,0,0"/>
+        </StackPanel>
+
         <!-- Yellow StackPanel in the middle with 2 columns -->
-        <Grid Grid.Row="1" x:Name="contentGrid">
+        <Grid Grid.Row="2" x:Name="contentGrid">
             <Grid.ColumnDefinitions>
                 <!-- Column 1: 30% width -->
                 <ColumnDefinition Width="3*" x:Name="leftColumn"/>
@@ -165,7 +171,7 @@
             </DockPanel>
         </Grid>
 
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="2">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Grid.Row="3">
             <Button Width="50" 
                     Background="{Binding AppConfig.TextColor}"
                     Foreground="{Binding AppConfig.BackgroundColor}"
