@@ -337,7 +337,6 @@ namespace NovelReader
             ModifySelectedChapter();
         }
 
-
         private void ItemContainerGenerator_StatusChanged(object? sender, EventArgs e)
         {
             // Kiểm tra xem tất cả các container đã được sinh ra hay chưa
@@ -519,6 +518,18 @@ namespace NovelReader
             }
         }
         #endregion Function Logical
+
+        #region Find
+        private void btnMoveNext_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void btnMovePrev_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+        #endregion Find
 
         #region UI Change funtion
 
@@ -910,8 +921,9 @@ namespace NovelReader
 
         }
 
+
         #endregion Menu Region
 
-
+        
     }
 }
