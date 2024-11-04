@@ -696,7 +696,7 @@ namespace NovelReader
         {
             if (!e.Handled && SelectedChapter != null)
             {
-                if (txtFind.IsFocused)
+                if (txtFind.IsFocused || NumChapterGoto.IsFocused)
                 {
                     return;
                 }
