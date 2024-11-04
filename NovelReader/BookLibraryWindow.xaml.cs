@@ -278,7 +278,7 @@ namespace NovelReader
                                 txtStatus.Text = "Deleting novel...";
                             });
 
-                            (isSuccess, msg) = _dbContext.DeleteNovel(novel.BookId).GetAwaiter().GetResult();
+                            (isSuccess, msg) = _dbContext.DeleteNovel(novel.BookId, splash.UpdateProgressBar).GetAwaiter().GetResult();
 
                             this.Dispatcher.Invoke(() =>
                             {
@@ -323,7 +323,7 @@ namespace NovelReader
                                 txtStatus.Text = "Split novel...";
                             });
 
-                            (isSuccess, msg) = _dbContext.SplitNovel(novel.BookId, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
+                            (isSuccess, msg) = _dbContext.SplitNovel(novel.BookId, MainWindow.AppConfig.SplitHeaderRegex, splash.UpdateProgressBar, cancel).GetAwaiter().GetResult();
 
                             this.Dispatcher.Invoke(() =>
                             {

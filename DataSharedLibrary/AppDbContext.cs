@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Security.Policy;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Linq;
 using System.Xml.Schema;
@@ -442,43 +443,49 @@ namespace DataSharedLibrary
 
 
 
-        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId, Action<double>? updateProgress = null)
+        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId,Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
             try
             {
                 // Check if the novel exists
-                var novel = await this.NovelContents.FindAsync(bookId);
-                if (novel == null)
-                {
-                    return (false, "Novel with the provided BookId not found.");
-                }
+                //var novel = await this.NovelContents.FindAsync(bookId);
+                //if (novel == null)
+                //{
+                //    return (false, "Novel with the provided BookId not found.");
+                //}
 
-                // Delete ChapterDetailContents
-                var chapterDetails = await this.ChapterDetailContents.Where(x => x.BookId == bookId).ToListAsync();
-                if (chapterDetails.Any())
-                {
-                    this.ChapterDetailContents.RemoveRange(chapterDetails);
-                    updateProgress?.Invoke(20);
-                }
 
-                // Delete ChapterContents
-                var chapters = await this.ChapterContents.Where(x => x.BookId == bookId).ToListAsync();
-                if (chapters.Any())
-                {
-                    this.ChapterContents.RemoveRange(chapters);
-                    updateProgress?.Invoke(40);
-                }
+                //// Delete ChapterDetailContents
+                //var chapterDetails = await this.ChapterDetailContents.Where(x => x.BookId == bookId).ToListAsync();
+                //if (chapterDetails.Any())
+                //{
+                //    this.ChapterDetailContents.RemoveRange(chapterDetails);
+                //    updateProgress?.Invoke(20);
+                //}
 
-                // Delete the Novel
-                this.NovelContents.Remove(novel);
-                updateProgress?.Invoke(70);
+                //// Delete ChapterContents
+                //var chapters = await this.ChapterContents.Where(x => x.BookId == bookId).ToListAsync();
+                //if (chapters.Any())
+                //{
+                //    this.ChapterContents.RemoveRange(chapters);
+                //    updateProgress?.Invoke(40);
+                //}
 
-                // Save changes
-                await this.SaveChangesAsync();
-                updateProgress?.Invoke(90);
+                //// Delete the Novel
+                //this.NovelContents.Remove(novel);
+                //updateProgress?.Invoke(70);
+
+                //// Save changes
+                //await this.SaveChangesAsync();
+                //updateProgress?.Invoke(90);
+
+                await this.ChapterDetailContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync(cancellationToken);
+                await this.ChapterContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync(cancellationToken);
+                await this.NovelContents.Where(x => x.BookId == bookId).ExecuteDeleteAsync(cancellationToken);
+
 
                 // Run VACUUM command
-                this.Database.ExecuteSqlRaw("VACUUM");
+                await this.Database.ExecuteSqlRawAsync("VACUUM");
                 updateProgress?.Invoke(99);
 
                 return (true, null);
@@ -494,7 +501,7 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<(bool isSuccess, string? msg)> SplitNovel(string bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
+        public async Task<(bool isSuccess, string? msg)> SplitNovel(string bookId,string splitHeaderRegex, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -514,8 +521,13 @@ namespace DataSharedLibrary
                     cancellationToken.ThrowIfCancellationRequested();
                     //await this.GetContentChapter(chapter, novelStock?.BookName, cancellationToken: cancellationToken, isParseHtml: false);
 
-                    var lstIndexHeader = chapter.Content?.Where(x => x?.Trim().StartsWith("<h") ?? false)
-                        .Select(x => chapter.Content.IndexOf(x)).ToList();
+
+                    var lstIndexHeader = chapter.Content?
+                        .Select((x, index) => new { Content = x?.Trim(), Index = index })
+                        .Where(x => x.Content != null &&
+                            Regex.IsMatch(x.Content, splitHeaderRegex))
+                        .Select(x => x.Index)
+                        .ToList();
 
                     //int lastChapter = newNovel?.Chapters?.Select(x => x.IndexChapter).Max() ?? 0;
                     var preIndexChapter = Int32.Parse($"{chapter.IndexChapter}000");
@@ -524,7 +536,15 @@ namespace DataSharedLibrary
                     {
                         chapter.BookId = newNovel?.BookId;
                         chapter.IndexChapter = preIndexChapter + 1;
-                        newNovel?.Chapters.Add(chapter);
+                        chapter.ChapterId = Guid.NewGuid().ToString();
+                        chapter?.ChapterDetailContents?.ToList().ForEach(content =>
+                        {
+                            content.Id = Guid.NewGuid().ToString();
+                            content.BookId = newNovel?.BookId;
+                            content.ChapterId = chapter.ChapterId;
+                        });
+
+                        newNovel?.Chapters.Add(chapter!);
                         continue;
                     }
 

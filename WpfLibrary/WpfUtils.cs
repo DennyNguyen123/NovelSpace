@@ -39,6 +39,7 @@ namespace WpfLibrary
             splash.txtProgress.Visibility = IsIndeterminate ? Visibility.Hidden : Visibility.Visible;
             splash.WindowStyle = IsIndeterminate ? WindowStyle.None : WindowStyle.ToolWindow;
             splash.txtStatus.Foreground = ConvertHtmlColorToBrush(textColor);
+            splash.txtProgress.Foreground = ConvertHtmlColorToBrush(textColor);
             splash.Background = ConvertHtmlColorToBrush(backgroudColor);
             if (windows.IsLoaded)
             {

@@ -33,6 +33,7 @@ namespace NovelReader
         public double TextMargin { get; set; } = 30;
         public double LineHeight { get; set; } = 100;
         public string FontFamily { get; set; } = "Arial";
+        public string SplitHeaderRegex { get; set; } = "^Chương\\s\\d+:\\s*";
         public string _sqlitepath { get => $"{this.FolderTemp}//data.db"; }
 
         private string _savepath = "appconfig.json";

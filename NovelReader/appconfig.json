@@ -17,5 +17,6 @@
   "LastHeigh": 624,
   "LastTop": 0,
   "LastLeft": 0,
-  "LineHeight" :  35
+  "LineHeight": 35,
+  "SplitHeaderRegex": "^Chương\\s\\d\\s*"
 }
