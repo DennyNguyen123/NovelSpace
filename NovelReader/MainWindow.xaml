@@ -106,7 +106,7 @@
                 Prev
             </Button>
 
-            <TextBlock x:Name="txtFindStatus"/>
+            <TextBlock Margin="2,0,0,0" x:Name="txtFindStatus" Foreground="{Binding AppConfig.TextColor}"/>
         </StackPanel>
 
         <!-- Yellow StackPanel in the middle with 2 columns -->

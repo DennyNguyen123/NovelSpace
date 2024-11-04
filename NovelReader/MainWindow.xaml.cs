@@ -527,6 +527,7 @@ namespace NovelReader
         #region Find
         private void btnFind_Click(object sender, RoutedEventArgs e)
         {
+            curFindIndex = -1;
             var lst = this.SelectedChapter.Content.Where(x => x.Like($"%{txtFind.Text}%"));
 
             lstFind = lst
@@ -562,11 +563,18 @@ namespace NovelReader
 
         }
 
-        private void HightlightFindText((int index, int pos) curFind)
+        private void HightlightFindText()
         {
-            lstContent.Focus();
-            lstContent.SelectedIndex = curFind.index;
-            lstContent.ScrollIntoView(lstContent.SelectedItem);
+            var curFind = lstFind[curFindIndex];
+
+
+            txtFindStatus.Text = $"{curFindIndex + 1}/{lstFind.Count}";
+
+            //lstContent.Focus();
+            //lstContent.SelectedIndex = curFind.index;
+            //lstContent.ScrollIntoView(lstContent.SelectedItem);
+            _current_reader.CurrentLine = curFind.index;
+            ModifySelectedChapter();
 
             HighlightSpeechingSelected(curFind.pos, txtFind.Text);
         }
@@ -581,9 +589,8 @@ namespace NovelReader
             {
                 curFindIndex += 1;
             }
-            txtFindStatus.Text = $"{curFindIndex + 1}/{lstFind.Count}";
 
-            HightlightFindText(lstFind[curFindIndex]);
+            HightlightFindText();
         }
 
         private void btnMovePrev_Click(object sender, RoutedEventArgs e)
@@ -597,8 +604,7 @@ namespace NovelReader
                 curFindIndex -= 1;
             }
 
-            txtFindStatus.Text = $"{curFindIndex + 1}/{lstFind.Count}";
-            HightlightFindText(lstFind[curFindIndex]);
+            HightlightFindText();
         }
         #endregion Find
 
