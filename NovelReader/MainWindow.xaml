@@ -92,14 +92,21 @@
 
         <StackPanel Orientation="Horizontal"  Grid.Row="1">
             <TextBox BorderBrush="Black" Width="100" x:Name="txtFind"/>
-            <Button x:Name="btnMoveNext" Margin="10,0,0,0" Click="btnMoveNext_Click">
-                <!--<fa:FontAwesome Icon="ArrowCircleDown" VerticalAlignment="Center" HorizontalAlignment="Center" />-->
-                Move Next
+
+            <Button x:Name="btnFind" Margin="5,0,0,0" Click="btnFind_Click">
+                <fa:FontAwesome Icon="Search" VerticalAlignment="Center" HorizontalAlignment="Center" />
             </Button>
 
-            <Button x:Name="btnMovePrev" Margin="10,0,0,0" Click="btnMovePrev_Click">
-                Move Prev
+            <Button x:Name="btnMoveNext" Margin="5,0,0,0" Click="btnMoveNext_Click" IsEnabled="False">
+                <!--<fa:FontAwesome Icon="ArrowCircleDown" VerticalAlignment="Center" HorizontalAlignment="Center" />-->
+                Next
             </Button>
+
+            <Button x:Name="btnMovePrev" Margin="5,0,0,0" Click="btnMovePrev_Click" IsEnabled="False">
+                Prev
+            </Button>
+
+            <TextBlock x:Name="txtFindStatus"/>
         </StackPanel>
 
         <!-- Yellow StackPanel in the middle with 2 columns -->

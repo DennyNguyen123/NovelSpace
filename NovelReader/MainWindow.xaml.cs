@@ -21,6 +21,7 @@ using System.Windows.Controls.Primitives;
 
 namespace NovelReader
 {
+
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         #region Property
@@ -58,6 +59,10 @@ namespace NovelReader
                 OnPropertyChanged(nameof(SelectedChapter));
             }
         }
+
+        private List<(int index, int pos)>? lstFind { get; set; } = null;
+
+        private int curFindIndex { get; set; }
 
         public CurrentReader? _current_reader { get; set; }
 
@@ -520,14 +525,80 @@ namespace NovelReader
         #endregion Function Logical
 
         #region Find
+        private void btnFind_Click(object sender, RoutedEventArgs e)
+        {
+            var lst = this.SelectedChapter.Content.Where(x => x.Like($"%{txtFind.Text}%"));
+
+            lstFind = lst
+            .SelectMany((x, i) =>
+            {
+                var positions = new List<(int index, int pos)>();
+                int pos = x.IndexOf(txtFind.Text);
+                var index = this.SelectedChapter.Content.IndexOf(x);
+
+
+                while (pos != -1)
+                {
+                    positions.Add((index: index, pos: pos));
+                    pos = x.IndexOf(txtFind.Text, pos + 1); // Tìm tiếp từ vị trí sau lần xuất hiện trước đó
+                }
+
+                return positions;
+            })
+            .ToList();
+
+            if (lstFind?.Count > 0)
+            {
+                btnMoveNext.IsEnabled = true;
+                btnMovePrev.IsEnabled = true;
+            }
+            else
+            {
+                btnMoveNext.IsEnabled = false;
+                btnMovePrev.IsEnabled = false;
+            }
+
+            txtFindStatus.Text = $"Found {lstFind.Count} result";
+
+        }
+
+        private void HightlightFindText((int index, int pos) curFind)
+        {
+            lstContent.Focus();
+            lstContent.SelectedIndex = curFind.index;
+            lstContent.ScrollIntoView(lstContent.SelectedItem);
+
+            HighlightSpeechingSelected(curFind.pos, txtFind.Text);
+        }
+
         private void btnMoveNext_Click(object sender, RoutedEventArgs e)
         {
+            if (curFindIndex == lstFind.Count - 1)
+            {
+                curFindIndex = 0;
+            }
+            else
+            {
+                curFindIndex += 1;
+            }
+            txtFindStatus.Text = $"{curFindIndex + 1}/{lstFind.Count}";
 
+            HightlightFindText(lstFind[curFindIndex]);
         }
 
         private void btnMovePrev_Click(object sender, RoutedEventArgs e)
         {
+            if (curFindIndex == 0)
+            {
+                curFindIndex = lstFind.Count - 1;
+            }
+            else
+            {
+                curFindIndex -= 1;
+            }
 
+            txtFindStatus.Text = $"{curFindIndex + 1}/{lstFind.Count}";
+            HightlightFindText(lstFind[curFindIndex]);
         }
         #endregion Find
 
@@ -915,15 +986,9 @@ namespace NovelReader
         }
 
 
-        public void ImportBook_Click(object sender, RoutedEventArgs e)
-        {
-
-
-        }
-
 
         #endregion Menu Region
 
-        
+
     }
 }
