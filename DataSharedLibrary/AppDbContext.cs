@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Channels;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -443,7 +444,7 @@ namespace DataSharedLibrary
 
 
 
-        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId,Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
+        public async Task<(bool isSuccess, string? msg)> DeleteNovel(string bookId, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -501,7 +502,7 @@ namespace DataSharedLibrary
         }
 
 
-        public async Task<(bool isSuccess, string? msg)> SplitNovel(string bookId,string splitHeaderRegex, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
+        public async Task<(bool isSuccess, string? msg)> SplitNovel(string bookId, string splitHeaderRegex, Action<double>? updateProgress = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -537,11 +538,20 @@ namespace DataSharedLibrary
                         chapter.BookId = newNovel?.BookId;
                         chapter.IndexChapter = preIndexChapter + 1;
                         chapter.ChapterId = Guid.NewGuid().ToString();
-                        chapter?.ChapterDetailContents?.ToList().ForEach(content =>
+                        chapter.ChapterDetailContents = new List<ChapterDetailContent>();
+                        chapter?.Content?.ToList().ForEach(content =>
                         {
-                            content.Id = Guid.NewGuid().ToString();
-                            content.BookId = newNovel?.BookId;
-                            content.ChapterId = chapter.ChapterId;
+                            if (!string.IsNullOrEmpty(content))
+                            {
+                                var chapContent = new ChapterDetailContent();
+                                chapContent.Id = Guid.NewGuid().ToString();
+                                chapContent.BookId = newNovel?.BookId;
+                                chapContent.ChapterId = chapter.ChapterId;
+                                chapContent.Index = chapter?.Content?.IndexOf(content!);
+                                chapContent.Content = content;
+                                chapter?.ChapterDetailContents.Add(chapContent);
+
+                            }
                         });
 
                         newNovel?.Chapters.Add(chapter!);
@@ -560,6 +570,7 @@ namespace DataSharedLibrary
 
                             if (lastChapBef != null)
                             {
+                                lastChapBef.ChapterDetailContents = new List<ChapterDetailContent>();
                                 befChap?.ForEach(content =>
                                 {
                                     var newContent = new ChapterDetailContent();
