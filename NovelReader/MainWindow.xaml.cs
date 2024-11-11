@@ -18,6 +18,7 @@ using System.Text.Json;
 using MessageBox = System.Windows.MessageBox; // Thêm thư viện Drawing để dùng Icon
 using WpfLibrary;
 using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
 
 namespace NovelReader
 {
@@ -125,6 +126,15 @@ namespace NovelReader
         {
             ModifySelectedChapter();
             base.OnClosing(e);
+        }
+
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            //Check darkmode
+            HwndSource source = (HwndSource)PresentationSource.FromVisual(this);
+            var isLightMode = WpfUtils.IsLightTheme();
+            WpfUtils.UseImmersiveDarkMode(source.Handle, !isLightMode);
         }
 
         protected override void OnClosed(EventArgs e)
