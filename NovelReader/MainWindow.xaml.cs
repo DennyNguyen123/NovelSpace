@@ -86,6 +86,8 @@ namespace NovelReader
 
         public List<(string? novelId, int? chapId, int? lineId, int? posId)> LstPrevChap { get; set; } = new List<(string? novelId, int? chapId, int? lineId, int? posId)>();
 
+        public bool isHideTitle { get; set; }
+
         #endregion Property
 
         public MainWindow()
@@ -978,17 +980,29 @@ namespace NovelReader
             }
         }
 
-        private void ToggleTopMost(object sender, RoutedEventArgs e)
+        private void ToggleTitle(object sender, RoutedEventArgs e)
         {
-            this.Topmost = !this.Topmost;
+            this.isHideTitle = !this.isHideTitle;
 
-            if (this.Topmost == true)
+            if (this.isHideTitle == true)
             {
-                toggleTopmostIco.Icon = FontAwesome.WPF.FontAwesomeIcon.CheckSquareOutline;
+                toggleTitle.Icon = FontAwesome.WPF.FontAwesomeIcon.CheckSquareOutline;
+                txtChapterName.Visibility = Visibility.Collapsed;
+                ttsPannel.Visibility = Visibility.Collapsed;
+                this.Title = string.Empty;
+                this.btnTogTOC.Visibility = Visibility.Collapsed;
+                this.btnTogOpenBook.Visibility = Visibility.Collapsed;
+                this.btnTogSearch.Visibility = Visibility.Collapsed;
             }
             else
             {
-                toggleTopmostIco.Icon = FontAwesome.WPF.FontAwesomeIcon.SquareOutline;
+                toggleTitle.Icon = FontAwesome.WPF.FontAwesomeIcon.SquareOutline;
+                txtChapterName.Visibility = Visibility.Visible;
+                ttsPannel.Visibility = Visibility.Visible;
+                this.Title = $"{this.Novel?.BookName} - {this.Novel?.Author}";
+                this.btnTogTOC.Visibility = Visibility.Visible;
+                this.btnTogOpenBook.Visibility = Visibility.Visible;
+                this.btnTogSearch.Visibility = Visibility.Visible;
             }
             e.Handled = true;
         }

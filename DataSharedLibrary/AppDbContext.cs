@@ -554,6 +554,8 @@ namespace DataSharedLibrary
                             }
                         });
 
+                        chapter.Content = null;
+
                         newNovel?.Chapters.Add(chapter!);
                         continue;
                     }
