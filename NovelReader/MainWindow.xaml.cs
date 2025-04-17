@@ -716,15 +716,19 @@ namespace NovelReader
                 switch (e.Key)
                 {
                     case Key.Down:
+                    case Key.S:
                         MoveNextLine();
                         break;
                     case Key.Up:
+                    case Key.W:
                         MovePrevLine();
                         break;
                     case Key.Right:
+                    case Key.D:
                         MoveNextChap();
                         break;
                     case Key.Left:
+                    case Key.A:
                         MovePrevChap();
                         break;
                     case Key.Space:
