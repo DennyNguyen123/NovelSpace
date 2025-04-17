@@ -88,6 +88,10 @@ namespace NovelReader
 
         public bool isHideTitle { get; set; }
 
+
+        private DateTime lastQPressTime = DateTime.MinValue;
+        // Khoảng thời gian tối đa giữa 2 lần nhấn Q để được coi là nhấn đúp (ví dụ: 500ms)
+        private readonly TimeSpan doublePressThreshold = TimeSpan.FromMilliseconds(500);
         #endregion Property
 
         public MainWindow()
@@ -711,6 +715,34 @@ namespace NovelReader
                 if (txtFind.IsFocused || NumChapterGoto.IsFocused)
                 {
                     return;
+                }
+
+                if (e.Key == Key.Q)
+                {
+                    DateTime now = DateTime.Now; // Lấy thời gian hiện tại
+                    if ((now - lastQPressTime) <= doublePressThreshold)
+                    {
+                        // ---- NHẤN ĐÚP PHÍM Q ĐƯỢC PHÁT HIỆN ----
+                        ToggleWindowVisibility();
+
+                        // Reset lại thời gian để tránh lần nhấn thứ 3 cũng kích hoạt ngay lập tức
+                        lastQPressTime = DateTime.MinValue;
+                    }
+                    else
+                    {
+                        // Lần nhấn Q đầu tiên (hoặc quá chậm), ghi lại thời gian
+                        lastQPressTime = now;
+                    }
+
+                    // Ngăn không cho switch xử lý phím Q nữa (tuỳ chọn)
+                    e.Handled = true;
+                    return; // Thoát khỏi phương thức sau khi xử lý Q
+                }
+                else
+                {
+                    // Nếu nhấn phím khác Q, bạn có thể muốn reset lại bộ đếm thời gian Q
+                    // để đảm bảo phải nhấn Q-Q liên tiếp.
+                    lastQPressTime = DateTime.MinValue; // Bỏ comment dòng này nếu muốn reset
                 }
 
                 switch (e.Key)
