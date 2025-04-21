@@ -195,11 +195,11 @@ namespace GetTruyen
 
                 if (!isLogin)
                 {
-                    await page.GotoAsync("https://docfull.vn/login/", _pageGotoOption);
+                    await page.GotoAsync($"{_config?.HostWeb}/login/", _pageGotoOption);
                     isLogin = true;
                 }
 
-                if (page.Url == "https://docfull.vn/login/")
+                if (page.Url == $"{_config?.HostWeb}/login/")
                 {
                     var username = page.Locator("xpath=//html/body/div/div/div/div[1]/form/div[1]/input");
                     await username.FillAsync(_config?.usrGet ?? "");

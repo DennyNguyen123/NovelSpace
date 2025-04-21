@@ -13,7 +13,7 @@
   "pwdGet": "Thanh2123",
   "timeOut": 3000,
   "logPath": "logs",
-  "HostWeb": "https://docfull.vn",
-  "HostAPI": "https://api.docfull.vn/api/v1",
+  "HostWeb": "https://docfull.net",
+  "HostAPI": "https://api.docfull.net/api/v1",
   "UrlGetListChapter": "/novels?isFull=true&page=1&limit=9999999"
 }
