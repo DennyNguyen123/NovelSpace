@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Reflection.Metadata;
 using System.Security.Policy;
 using System.Text;
@@ -12,10 +13,12 @@ using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Web;
 using DataSharedLibrary;
 using Flurl;
 using Flurl.Http;
 using GetTruyen;
+using HtmlAgilityPack;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
 using Newtonsoft.Json;
@@ -85,7 +88,7 @@ namespace Get_DocFull
     }
 
 
-        public class Get_DocFull
+    public class Get_DocFull
     {
         protected IPlaywright? _playwright = null;
         protected IBrowser? _browser = null;
@@ -184,9 +187,9 @@ namespace Get_DocFull
             }
             else
             {
-                var tk = JsonSerializer.Deserialize<TokenResponse>(rq.Content);
+                var jsonContent = JObject.Parse(rq.Content!);
 
-                _token = tk?.data?.token;
+                _token = jsonContent?["data"]?["token"]?.ToString();
             }
 
         }
@@ -258,16 +261,11 @@ namespace Get_DocFull
                 //Get chapters
                 var urlAllChapter = $"{_config?.HostAPI}/chapters/{novel.BookId}?page=1&limit=99999&orderBy=chapterNumber&order=1";
 
-                if (_apiContext == null)
-                {
-                    return;
-                }
-
                 var req = await MyHttpRequest(
-                    method : Method.Get
-                    ,api: urlAllChapter
-                    ,body: null
-                    , contentType : ContentType.Json
+                    method: Method.Get
+                    , api: urlAllChapter
+                    , body: null
+                    , contentType: ContentType.Json
                     , requiresAuth: false
                 );
 
@@ -373,16 +371,43 @@ namespace Get_DocFull
         {
             try
             {
-                var link = $"{_config?.HostWeb}/{bookSlug}/{chap.Slug}";
+                var link = $"{_config?.HostAPI}/chapters/get-chapter/{bookSlug}/{chap.IndexChapter}";
 
                 //var content = await tab.InnerHTMLAsync("//html/body/div/div/div[2]/div[1]/div[4]/div[2]/div/div");
+                var rs = await MyHttpRequest(
+                    method: Method.Get,
+                    api: link,
+                    body: null,
+                    contentType: ContentType.Json,
+                    requiresAuth: true
+                );
+
+                if (rs.isSuccessful)
+                {
+                    var jsonContent = JObject.Parse(rs.Content!);
+                    if (jsonContent?["data"]?["content"] == null)
+                    {
+                        await _log.WriteLog($"[{reTitle}][{bookSlug}] No content found for chapter {chap.IndexChapter} - {chap.Slug}");
+                        return;
+                    }
+                    
+                    var data_encrypted = jsonContent?["data"]?["content"]?.ToString()??"";
+
+                    var content_html = ChapterDecryptor.DecryptChapter(data_encrypted);
 
 
-                var content = "";
+                    HtmlDocument doc = new HtmlDocument();
+                    doc.LoadHtml(content_html);
 
-                chap.ChapterDetailContents = AppDbContext.GenerateChapterContent(content, chap.BookId, chap.ChapterId);
 
-                await _log.WriteLog($"[{reTitle}][{bookSlug}][Trial {trial}] Completed chapter {chap.IndexChapter}/{maxChap} - {chap.Slug} - ({chap?.ChapterDetailContents?.Count} contents)");
+                    HtmlNode chapterNode = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'chapter')]");
+
+                    var content = chapterNode.InnerHtml;
+
+                    chap.ChapterDetailContents = AppDbContext.GenerateChapterContent(content, chap.BookId, chap.ChapterId);
+
+                    await _log.WriteLog($"[{reTitle}][{bookSlug}][Trial {trial}] Completed chapter {chap.IndexChapter}/{maxChap} - {chap.Slug} - ({chap?.ChapterDetailContents?.Count} contents)");
+                }
             }
             catch (Exception)
             {
@@ -397,6 +422,77 @@ namespace Get_DocFull
         }
 
 
+        public async Task GetOneNovel(string url)
+        {
+            string[] parts = url.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // The desired part is the last element in the array.
+            string id = parts.Last();
+
+            var urlGetData = $"{_config?.HostAPI}/novels/{id}";
+
+            var rs = MyHttpRequest(
+                method: Method.Get,
+                api: urlGetData,
+                body: null,
+                contentType: ContentType.Json,
+                requiresAuth: true
+            );
+
+            if (!rs.Result.isSuccessful || string.IsNullOrEmpty(rs.Result.Content))
+            {
+                await _log.WriteLog("Failed to get novel data");
+                return;
+            }
+
+            var jsonrs = JObject.Parse(rs.Result.Content);
+
+
+            var novel = new NovelContent()
+            {
+                BookId = (string?)jsonrs?["data"]?["id"],
+                BookName = (string?)jsonrs?["data"]?["name"],
+                Slug = (string?)jsonrs?["data"]?["slug"],
+                Author = (string?)jsonrs?["data"]?["maker"],
+                Tags = jsonrs?["data"]?["categories"]?.Select(r => (string?)r?["name"])?.ToList(),
+                Description = (string?)jsonrs?["data"]?["description"],
+                ShortDesc = (string?)jsonrs?["data"]?["shortDescription"],
+                ImageBase64 = (string?)jsonrs?["data"]?["image"],
+                MaxChapterCount = (int?)jsonrs?["data"]?["chapters"]?["chapterNumber"]
+
+            };
+
+            await GetChapter(novel);
+
+
+            novel.ImageBase64 = await Utils.DownloadImageAsBase64(novel.ImageBase64);
+
+
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = _config?.maxThread ?? 5
+            };
+
+            await Parallel.ForEachAsync(novel?.Chapters!, parallelOptions, async (chapter, cancellationToken) =>
+            {
+                await GetContentDetail(chapter, novel?.Slug, maxChap: novel?.MaxChapterCount);
+            });
+
+            if (novel?.Chapters?.Any(x => x?.ChapterDetailContents?.Count() == 0) ?? true)
+            {
+                await _log.WriteLog($"Some chapter is missing - Skip save");
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(novel);
+
+            var compress = Utils.GZipCompressText(json);
+
+            var path = $"{_config?.outputPath ?? "./"}/{novel.BookName ?? novel.Slug ?? urlGetData}.novel";
+            await File.WriteAllTextAsync(path, compress);
+
+            await _log.WriteLog(($"{novel?.BookName} save completed"));
+        }
 
         public async Task GetContentByList(int trial = 0)
         {
