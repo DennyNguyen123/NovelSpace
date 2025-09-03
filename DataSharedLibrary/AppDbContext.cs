@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using QuickEPUB;
 using System;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel; // Thêm dòng này
 using System.Data;
 using System.Diagnostics;
 using System.Security.Policy;
@@ -75,7 +76,7 @@ namespace DataSharedLibrary
                 {
                     lstChapter.ForEach(x =>
                     {
-                        x.Content = new List<string?>();
+                        x.Content = new ObservableCollection<string?>();
                         if (isMergeAuthorName)
                         {
                             x.Title = $"[{x.IndexChapter + 1}/{novel.MaxChapterCount}] {x.Title}";
@@ -169,7 +170,7 @@ namespace DataSharedLibrary
                     .Distinct()
                     .OrderBy(x => x.Index);
 
-                chapter.Content = content?.Select(x => x.Content).ToList();
+                chapter.Content = new ObservableCollection<string?>(content?.Select(x => x.Content).ToList() ?? new List<string?>());
             }
 
 
@@ -567,7 +568,7 @@ namespace DataSharedLibrary
 
                         if (index == 0 && indexHeader != 0)
                         {
-                            var befChap = chapter?.Content?.GetRange(0, indexHeader - 1);
+                            var befChap = chapter?.Content?.Take(indexHeader - 1).ToList();
                             var lastChapBef = newNovel?.Chapters?.LastOrDefault();
 
                             if (lastChapBef != null)
@@ -601,7 +602,7 @@ namespace DataSharedLibrary
 
                         var count = lastChapterIndex - indexHeader;
 
-                        var lstNewContent = chapter?.Content?.GetRange(indexHeader + 1, count);
+                        var lstNewContent = chapter?.Content?.Skip(indexHeader + 1).Take(count).ToList();
 
                         lstNewContent?.ForEach(content =>
                         {

@@ -19,6 +19,7 @@ using MessageBox = System.Windows.MessageBox; // Thêm thư viện Drawing để
 using WpfLibrary;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
+using System.Collections.ObjectModel;
 
 namespace NovelReader
 {
@@ -92,6 +93,7 @@ namespace NovelReader
         private DateTime lastQPressTime = DateTime.MinValue;
         // Khoảng thời gian tối đa giữa 2 lần nhấn Q để được coi là nhấn đúp (ví dụ: 500ms)
         private readonly TimeSpan doublePressThreshold = TimeSpan.FromMilliseconds(500);
+        private int _lastHighlightedLineIndex = -1;
         #endregion Property
 
         public MainWindow()
@@ -343,7 +345,7 @@ namespace NovelReader
 
         }
 
-        private void RenderChapter()
+        private async Task RenderChapter()
         {
 
             var index = _current_reader?.CurrentChapter + 1;
@@ -355,7 +357,7 @@ namespace NovelReader
             // Đăng ký sự kiện StatusChanged để chờ sinh xong các item container
             lstContent.ItemContainerGenerator.StatusChanged += ItemContainerGenerator_StatusChanged;
 
-            ModifySelectedChapter();
+            await ModifySelectedChapter();
         }
 
         private void ItemContainerGenerator_StatusChanged(object? sender, EventArgs e)
@@ -384,7 +386,7 @@ namespace NovelReader
             }
         }
 
-        private void ModifySelectedChapter()
+        private async Task ModifySelectedChapter()
         {
             try
             {
@@ -397,7 +399,7 @@ namespace NovelReader
                 if (_current_reader != null)
                 {
                     _AppDbContext.CurrentReader.Update(_current_reader);
-                    _AppDbContext.SaveChanges();
+                    await _AppDbContext.SaveChangesAsync();
                 }
 
                 Utils.ClearRAM(false);
@@ -451,14 +453,14 @@ namespace NovelReader
                    );
         }
 
-        public void MoveNextLine()
+        public async Task MoveNextLine()
         {
 
             _current_reader.CurrentPosition = 0;
             if (_current_reader.CurrentLine < SelectedChapter?.Content?.Count - 1)
             {
                 _current_reader.CurrentLine += 1;
-                ModifySelectedChapter();
+                await ModifySelectedChapter();
             }
             else
             {
@@ -497,14 +499,14 @@ namespace NovelReader
             }
         }
 
-        private void MovePrevLine()
+        private async Task MovePrevLine()
         {
 
             _current_reader.CurrentPosition = 0;
             if (_current_reader.CurrentLine > 0)
             {
                 _current_reader.CurrentLine -= 1;
-                ModifySelectedChapter();
+                await ModifySelectedChapter();
             }
             else
             {
@@ -579,7 +581,7 @@ namespace NovelReader
 
         }
 
-        private void HightlightFindText()
+        private async Task HightlightFindText()
         {
             var curFind = lstFind[curFindIndex];
 
@@ -590,7 +592,7 @@ namespace NovelReader
             //lstContent.SelectedIndex = curFind.index;
             //lstContent.ScrollIntoView(lstContent.SelectedItem);
             _current_reader.CurrentLine = curFind.index;
-            ModifySelectedChapter();
+            await ModifySelectedChapter();
 
             HighlightSpeechingSelected(curFind.pos, txtFind.Text);
         }
@@ -655,21 +657,13 @@ namespace NovelReader
 
         private void HighlightSpeechingSelected(int startPosition, string? highlightText)
         {
-            foreach (var item in lstContent.Items)
+            // 1. Xóa highlight của dòng trước đó (nếu có)
+            if (_lastHighlightedLineIndex != -1 && _lastHighlightedLineIndex != _current_reader.CurrentLine)
             {
-                var container = (ListBoxItem)lstContent.ItemContainerGenerator.ContainerFromItem(item);
-                if (container != null)
-                {
-                    var textBlock = WpfUtils.FindVisualChild<TextBlock>(container);
-                    if (textBlock != null)
-                    {
-                        textBlock.Inlines.Clear();
-                        textBlock.Inlines.Add(new Run(item.ToString())); // Hiển thị nội dung mặc định (bỏ highlight)
-                    }
-                }
+                ClearHighlightForLine(_lastHighlightedLineIndex);
             }
 
-            // Highlight item đang được chọn
+            // 2. Highlight dòng hiện tại
             if (lstContent.SelectedItem is string selectedText)
             {
                 var container = (ListBoxItem)lstContent.ItemContainerGenerator.ContainerFromItem(selectedText);
@@ -679,6 +673,27 @@ namespace NovelReader
                     if (textBlock != null)
                     {
                         WpfUtils.HighlightWord(textBlock, AppConfig.CurrentTextColor, selectedText, startPosition, (highlightText ?? "").Length);
+                    }
+                }
+            }
+
+            // 3. Cập nhật chỉ mục dòng được highlight gần nhất
+            _lastHighlightedLineIndex = _current_reader.CurrentLine;
+        }
+
+        private void ClearHighlightForLine(int lineIndex)
+        {
+            if (lineIndex >= 0 && lineIndex < lstContent.Items.Count)
+            {
+                var item = lstContent.Items[lineIndex];
+                var container = (ListBoxItem)lstContent.ItemContainerGenerator.ContainerFromItem(item);
+                if (container != null)
+                {
+                    var textBlock = WpfUtils.FindVisualChild<TextBlock>(container);
+                    if (textBlock != null)
+                    {
+                        textBlock.Inlines.Clear();
+                        textBlock.Inlines.Add(new Run(item.ToString()));
                     }
                 }
             }
@@ -789,7 +804,7 @@ namespace NovelReader
 
         }
 
-        private void LstContent_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void LstContent_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is System.Windows.Controls.ListBox listView)
             {
@@ -797,7 +812,7 @@ namespace NovelReader
                 {
                     _current_reader.CurrentLine = lstContent.SelectedIndex;
                     _current_reader.CurrentPosition = 0;
-                    ModifySelectedChapter();
+                    await ModifySelectedChapter();
                 }
             }
         }
