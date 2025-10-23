@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DataSharedLibrary;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Playwright;
+using Newtonsoft.Json;
 using NovelGetConsole;
 
 namespace GetTruyen
@@ -34,7 +35,27 @@ namespace GetTruyen
             //var decrpt = ChapterDecryptor.DecryptChapter(en);
             //Console.WriteLine("Decrypted Chapter: " + decrpt);
 
-            await get_DocFull.GetOneNovel("https://docfull.net/vu-cuc-thien-ha/");
+            var listdoc = "./list-truyen.json";
+
+            Console.WriteLine("Reading list from " + listdoc);
+            Console.WriteLine($"Thread: {get_DocFull?._config?.maxThread} - Delay Time: {get_DocFull?._config?.delayTime}");
+
+            string fullJson = File.ReadAllText(listdoc);
+
+            var lstUrl = JsonConvert.DeserializeObject<List<string>>(fullJson);
+
+            if (lstUrl?.Count == 0)
+            {
+                return;
+            }
+
+             foreach (var item in lstUrl!)
+            {
+                //await get_DocFull.GetOneNovel("https://docfull.net/vu-cuc-thien-ha/");
+                await get_DocFull?.GetOneNovel(item);
+
+            }
+
             Console.WriteLine("Done");
             Console.ReadKey();
 

@@ -476,6 +476,7 @@ namespace Get_DocFull
             await Parallel.ForEachAsync(novel?.Chapters!, parallelOptions, async (chapter, cancellationToken) =>
             {
                 await GetContentDetail(chapter, novel?.Slug, maxChap: novel?.MaxChapterCount);
+                await Task.Delay(_config?.delayTime ?? 200);
             });
 
             if (novel?.Chapters?.Any(x => x?.ChapterDetailContents?.Count() == 0) ?? true)
