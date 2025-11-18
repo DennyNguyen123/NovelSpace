@@ -307,17 +307,20 @@ namespace NovelReader
             {
                 splash.UpdateStatus((processbar, txtStatus) =>
                 {
-                    txtStatus.Text = "Loading novels...";
+                    txtStatus.Text = "Loading...";
                 });
 
                 var dbPath = AppConfig._sqlitepath;
                 var bookId = AppConfig.CurrentBookId;
+
 
                 if (_AppDbContext == null)
                 {
                     var dbContextOptions = new Microsoft.EntityFrameworkCore.DbContextOptions<AppDbContext>();
                     _AppDbContext = new AppDbContext(dbPath, dbContextOptions);
                 }
+
+
 
                 this.Novel = _AppDbContext.GetNovel(bookId, false).GetAwaiter().GetResult();
 
@@ -366,6 +369,35 @@ namespace NovelReader
             if (lstContent.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
             {
                 ChangeLineVisual(); // Gọi hàm để thay đổi LineHeight
+
+                // --- ĐOẠN CODE MỚI THÊM VÀO ---
+                // Mục đích: Focus vào dòng đang được chọn (dòng 0 hoặc dòng đang đọc dở)
+                // để có thể dùng phím mũi tên điều hướng ngay lập tức.
+
+                int index = lstContent.SelectedIndex;
+                if (index >= 0)
+                {
+                    // Lấy về đối tượng giao diện (ListBoxItem) tại vị trí index
+                    var item = lstContent.ItemContainerGenerator.ContainerFromIndex(index) as ListBoxItem;
+
+                    if (item != null)
+                    {
+                        item.Focus(); // Giả lập hành động click (Focus)
+                    }
+                    else
+                    {
+                        // Trường hợp ảo hóa (Virtualization) chưa kịp tạo item, 
+                        // ta cuộn tới đó rồi mới focus (dự phòng)
+                        lstContent.ScrollIntoView(lstContent.Items[index]);
+
+                        // Dùng Dispatcher để chờ UI cập nhật xong mới Focus
+                        this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+                        {
+                            var delayedItem = lstContent.ItemContainerGenerator.ContainerFromIndex(index) as ListBoxItem;
+                            delayedItem?.Focus();
+                        }));
+                    }
+                }
             }
         }
 
