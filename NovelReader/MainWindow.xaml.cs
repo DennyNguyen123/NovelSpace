@@ -168,7 +168,7 @@ namespace NovelReader
             else
             {
                 // Nếu cửa sổ đang ẩn thì hiện lên
-                //this.ShowInTaskbar = AppConfig.isShowInTaskBar;
+                //this.ShowInTaskbar = AppConfig.isShowInTaskbar;
                 this.Show();
                 this.WindowState = WindowState.Normal; // Đảm bảo cửa sổ hiển thị bình thường
                 this.Activate(); // Đưa cửa sổ lên phía trước
@@ -425,6 +425,9 @@ namespace NovelReader
                 lstContent.SelectedIndex = _current_reader?.CurrentLine ?? 0;
                 ChapterListView.ScrollIntoView(ChapterListView.SelectedItem);
                 lstContent.ScrollIntoView(lstContent.SelectedItem);
+
+                // Focus the selected line after scrolling into view
+                FocusSelectedLine(_current_reader?.CurrentLine ?? 0); 
 
                 ContinueSpeech();
                 //UpdateHightlightFirst();
@@ -1102,6 +1105,35 @@ namespace NovelReader
 
         #endregion Menu Region
 
+        /// <summary>
+        /// Focuses the ListBoxItem at the specified index.
+        /// Handles virtualization by scrolling into view and then focusing.
+        /// </summary>
+        /// <param name="index">The index of the item to focus.</param>
+        private void FocusSelectedLine(int index)
+        {
+            if (index >= 0 && index < lstContent.Items.Count)
+            {
+                // Try to get the ListBoxItem directly
+                var item = lstContent.ItemContainerGenerator.ContainerFromIndex(index) as ListBoxItem;
 
+                if (item != null)
+                {
+                    item.Focus();
+                }
+                else
+                {
+                    // If the item is null (due to UI virtualization),
+                    // scroll it into view and then use Dispatcher to focus after UI updates.
+                    lstContent.ScrollIntoView(lstContent.Items[index]);
+
+                    this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, new Action(() =>
+                    {
+                        var delayedItem = lstContent.ItemContainerGenerator.ContainerFromIndex(index) as ListBoxItem;
+                        delayedItem?.Focus();
+                    }));
+                }
+            }
+        }
     }
 }
